@@ -6,4 +6,5 @@
 - Preserve the privacy, allowlist, identity, and member-visibility invariants in `SPEC.md`. Never use a Discord user token.
 - Add offline tests for changed behavior. Do not make live integration tests part of the default suite.
 - Run `uv run ruff check .`, `uv run mypy src`, and `uv run pytest -q`; update `PLAN.md` and `DOCUMENTATION.md` at each completed milestone.
-- Keep migrations append-only and never commit secrets, local databases, or generated private data.
+- Before persistence changes, follow the schema and identity rules in `SPEC.md`; preserve one occurrence row per URL appearance, including repeats in one message. Applied migrations are immutable; add a new migration for schema changes.
+- Never commit secrets, local databases, or generated private data.
