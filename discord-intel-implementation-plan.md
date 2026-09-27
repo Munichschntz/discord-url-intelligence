@@ -9,7 +9,8 @@
 - [x] Milestone 0 — account and permissions setup documented in `README.md`.
 - [x] Milestone 1 — scaffold and specification complete.
 - [x] Milestone 2 — SQLite and append-only migrations complete.
-- [ ] Milestone 3 — next: URL extraction and canonicalization.
+- [x] Milestone 3 — URL extraction and canonicalization complete.
+- [ ] Milestone 4 — next: live Discord ingestion.
 
 > **For the coding assistant:** This is a build specification, not a request to implement every milestone in one pass. Start at the first incomplete milestone in `PLAN.md`, finish and validate it, update the project documents, and stop. Verify the current official documentation before writing any integration code. This document is self-contained; do not assume access to the conversation that produced it.
 

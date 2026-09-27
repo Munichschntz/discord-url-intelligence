@@ -4,6 +4,7 @@ This scaffold contains no external API integration. These official references ar
 
 | Integration | Official references | Status |
 |---|---|---|
+| URL extraction and normalization | [`linkify-it-py` 2.2.0 README/API](https://github.com/tsutsu3/linkify-it-py/blob/main/README.md), [`url-normalize` 2.2.1 README](https://github.com/niksite/url-normalize/blob/master/README.md) | Checked 2026-09-27 for Milestone 3 |
 | `aiosqlite` and SQLite persistence | [`aiosqlite` stable API](https://aiosqlite.omnilib.dev/en/stable/api.html), [SQLite foreign keys](https://sqlite.org/foreignkeys.html), [SQLite PRAGMAs](https://sqlite.org/pragma.html), [SQLite FTS5](https://sqlite.org/fts5.html) | Checked 2026-09-27 for Milestone 2; see contract below |
 | Discord Gateway, intents, messages | [Gateway events](https://docs.discord.com/developers/events/gateway), [message resource](https://docs.discord.com/developers/resources/message), [Gateway intents](https://docs.discord.com/developers/events/gateway#gateway-intents) | Verify for Milestone 4 |
 | Discord channel history and rate limits | [Get channel messages](https://docs.discord.com/developers/resources/channel#get-channel-messages), [rate limits](https://docs.discord.com/developers/topics/rate-limits) | Verify for Milestone 5 |
@@ -14,6 +15,12 @@ This scaffold contains no external API integration. These official references ar
 | SQLite FTS5 and backup | [FTS5](https://www.sqlite.org/fts5.html), [online backup API](https://www.sqlite.org/backup.html) | Verify for Milestones 2, 9, and 16 |
 | LM Studio local endpoints | [OpenAI-compatible API](https://lmstudio.ai/docs/developer/openai-compat), [structured output](https://lmstudio.ai/docs/developer/openai-compat/structured-output), [embeddings](https://lmstudio.ai/docs/developer/openai-compat/embeddings) | Verify for Milestones 12 and 13 |
 | MCP Python SDK v2 | [Official SDK docs](https://py.sdk.modelcontextprotocol.io/), [SDK repository](https://github.com/modelcontextprotocol/python-sdk), [run/deployment](https://py.sdk.modelcontextprotocol.io/run/) | Verify v2 API and transport for Milestone 11 |
+
+## Milestone 3 contract
+
+- `linkify-it-py` 2.2.0 `LinkifyIt.match()` returns match objects with `schema`, `index`, and `last_index`. Configure `fuzzy_link=False` and `fuzzy_email=False`, then accept only `http:` and `https:` schemas so extracted offsets come from the upstream parser and only explicit web URLs are indexed.
+- `url-normalize` 2.2.1 `url_normalize()` provides scheme/host case normalization, IDNA handling, and default authority normalization. This application passes only the URL origin to it: its general defaults also normalize path dot segments and percent-encoded data, so the original path and query are retained separately.
+- Tracking removal is intentionally local and limited to `utm_*`, `fbclid`, and `gclid`; all other query components remain in their original order and encoding. Provider host aliases and GitHub/Hugging Face/Hacker News path classification remain explicit application rules.
 
 ## Milestone 2 contract
 

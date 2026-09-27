@@ -2,7 +2,7 @@
 
 ## Current state
 
-The repository has completed the initial Discord account and permission setup guide in `README.md`, the Python scaffold, and Milestone 2 SQLite persistence. `discord-intel db init` is available. URL extraction and Discord collection are not implemented yet; the application does not run a web server.
+The repository has completed the initial Discord account and permission setup guide in `README.md`, the Python scaffold, Milestone 2 SQLite persistence, and Milestone 3 URL extraction/canonicalization. `discord-intel db init` is available. URL helpers are not yet connected to Discord collection. The application does not run a web server.
 
 ## Prerequisites
 

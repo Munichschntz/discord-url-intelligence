@@ -20,3 +20,9 @@ None recorded. Recheck the official contract at the milestone where each integra
 - Include the root migration directory in built wheels and use it from either a source checkout or an installed package.
 - Keep Discord snowflakes as decimal text. Canonical links are unique globally while `message_links` stores each URL appearance independently.
 - No discrepancy from the supplied plan or verified official docs was found.
+
+## 2026-09-27: URL libraries and conservative identity
+
+- Use `linkify-it-py` for HTTP(S) message URL matching and source offsets, and `url-normalize` for scheme, host, IDNA, and default authority normalization.
+- Do not apply the normalizer to path/query data: its documented defaults normalize dot segments and percent-encoded values. Keep the raw path/query and apply only the repository's explicit root/provider and known-tracking rules.
+- Retain small domain-specific rules for `www` aliases, GitHub repository identity, Hugging Face resource type, Hacker News item URLs, and tracking parameters; these are not generic URL parsing replacements.

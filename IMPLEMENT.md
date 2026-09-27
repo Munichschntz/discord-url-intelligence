@@ -12,6 +12,10 @@ No Discord client, database connection, HTTP provider, worker, or web server is 
 
 `db/repository.py` provides parameterized upserts for guilds, channels, authors, messages, canonical links, and individual message-link occurrences. Link rows deduplicate by canonical URL; occurrence rows deduplicate only by `(message_id, occurrence_index)`. `discord-intel db init` applies pending migrations idempotently. FTS5 tables are external-content indexes maintained by SQL triggers on their document tables.
 
+## URL boundary (Milestone 3)
+
+`urls/extract.py` uses `linkify-it-py` to return each explicit HTTP(S) match with its original text and half-open source offsets. `urls/canonical.py` uses `url-normalize` for scheme/authority normalization and keeps raw path/query semantics, applying only known tracking removal and provider-specific identity rules. It does not perform network access or persist data.
+
 ## Intended boundaries
 
 - `config.py`: validated, shared process configuration.
