@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling>=1.26,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "discord-intel"
+version = "0.1.0"
+description = "A private, searchable index of links shared in an allowlisted Discord server."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic-settings>=2.6,<3",
+    "python-dotenv>=1.0,<2",
+]
+
+[project.scripts]
+discord-intel = "discord_intel.cli:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13,<2",
+    "pytest>=8.3,<9",
+    "ruff>=0.8,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/discord_intel"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]

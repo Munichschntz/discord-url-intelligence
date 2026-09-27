@@ -1,0 +1,67 @@
+# Product Specification
+
+## Purpose and scope
+
+Discord Intel archives messages from one configured Discord guild and explicitly allowlisted channels, extracts shared HTTP(S) URLs, enriches links through provider adapters, and provides searchable owner and member views. The first useful release is Milestone 10A. Collection, metadata, and lexical search must not depend on LM Studio. There is no Discord connection or provider integration in the current scaffold.
+
+## Invariants
+
+1. Use an authorized Discord bot, never a user token or self-bot. Ingest only configured guild and channel IDs.
+2. Save every message in allowed channels, including messages without URLs. Keep the web-visible channel allowlist separate and empty by default.
+3. A canonical URL has one global link row; every appearance is a separate occurrence, including repeated URLs in one message.
+4. Ingestion is idempotent by Discord message ID. Edits reconcile occurrences; deletes are soft deletes. Enrichment failures never erase messages or links.
+5. Gateway callbacks do local parsing and transactional persistence only. Network work runs in durable background jobs.
+6. Search, metadata, and the member site work when LM Studio is offline.
+7. All member routes require Discord OAuth sign-in and a current membership check. Apply web-visible filtering before ranking, snippets, counts, and detail rendering.
+8. Bind the web app and owner MCP to loopback. Only expose the web app through HTTPS. Treat posted URLs as untrusted when fetching them.
+9. Preserve original URL text separately from canonical identity; remove only known tracking parameters, never meaningful query parameters.
+10. Store Discord IDs losslessly as decimal strings or integers, and timestamps in a consistent UTC ISO-8601 format.
+
+## Identity and access
+
+- Canonical link identity is URL-based: a repository and one of its issue URLs are different links.
+- A Discord message is uniquely identified by its message ID; each URL occurrence has a stable occurrence index within that message.
+- OAuth requests only `identify`. A short-lived `state` binds the callback to a login attempt. The bot checks the identified user against the configured guild.
+- Keep only an opaque random server-side session identifier (hashed at rest), with an expiring Secure, HttpOnly, SameSite cookie. Recheck guild membership at least every five minutes and fail closed after cache expiry if Discord is unavailable.
+- Web-visible channels must be in the ingestion allowlist and explicitly designated as readable by all guild members. If visibility is uncertain, exclude the channel.
+- Member views include only provider metadata and live mentions/context in web-visible channels. Never expose private occurrences, owner status, manual tags, notes, internal summaries, or private-derived search rank.
+
+## Normative schema
+
+Migrations are ordered SQL files tracked by filename and checksum. Applied migration files are immutable. Enable foreign keys, WAL, `synchronous=NORMAL`, and a nonzero busy timeout.
+
+| Table | Identity and required behavior |
+|---|---|
+| `schema_migrations` | Version primary key, filename, checksum, applied time; reject changed applied migrations. |
+| `guilds` | Unique Discord guild ID, name, timestamps. |
+| `channels` | Unique channel ID, guild foreign key, name/kind, `web_visible` false by default. |
+| `authors` | Unique Discord author ID, display name, username, bot flag; refresh renamed display names. |
+| `messages` | Unique Discord message ID; channel/author foreign keys; content, creation/edit/delete/ingest times, `has_links`. Current edited content replaces old; deleted messages do not appear in current search/context. |
+| `links` | Local primary key, unique canonical URL, first original URL, host/domain, provider/resource type, metadata, first/last seen, enrichment state. Preserve the row when occurrences are deleted. |
+| `message_links` | One row per occurrence with message/link foreign keys, occurrence index, raw URL, content offsets, and creation time; unique `(message_id, occurrence_index)`. |
+| `link_metadata` | Link foreign key, provider, structured JSON/readable text, endpoint cache validators, fetched/checked times, content hash. Never overwrite manual fields. |
+| `jobs` | Durable job identity, optional link foreign key, kind/status/availability/attempts/timestamps/error/dedupe key. Prevent duplicate outstanding work. |
+| `channel_checkpoints` | Unique channel foreign key, last safely committed message ID, update time, backfill state; update with processed batch. |
+| `tags`, `link_tags` | Unique tag; link/tag/source association with `manual`, `provider`, or `LLM` provenance. |
+| `link_state`, `link_notes` | One lifecycle state per link and append-only notes. Added in Milestone 14. |
+| `link_summaries` | Link, model, prompt version, source hash, structured JSON, generated time. Added in Milestone 12. |
+| `link_embeddings` | Link, model, dimension, float32 BLOB, source hash, generated time; unique `(link_id, model)`. Added in Milestone 13. |
+| `search_documents`, `search_fts` | Internal link-centric documents/index, rebuilt from current metadata and non-deleted mentions. |
+| `web_search_documents`, `web_search_fts` | Separate member-safe documents built only from provider data and non-deleted web-visible mentions. Scope before ranking and snippets. |
+| `web_sessions` | Hashed opaque session ID, Discord user ID, creation/expiry, last verified membership time. Added in Milestone 10A. |
+
+Index channel/time/message for context, link/message for occurrences, job availability, and source filters. A transaction must keep message ingestion, occurrence reconciliation, job enqueue, and checkpoint updates coherent. Document and test FTS synchronization; rebuild both surfaces after relevant content or visibility changes.
+
+## Lifecycle and search
+
+Status values are `NEW`, `TRY`, `WATCH`, `TESTING`, `DONE`, `BLOCKED`, and `ARCHIVED`; new links default to `NEW`. Validate every change. Manual tags and notes survive provider refresh and summary regeneration.
+
+Search supports channel, author, domain, resource type, tag, status, and date filters. Default result limit is 20, hard maximum 50. Convert user text to safe FTS terms. Discussion context contains at most three prior and three following live messages in the same channel. Member-facing documents and result fields must be derived only from visible occurrences.
+
+## Acceptance criteria
+
+- Installation, CLI help, lint, type-check, and tests pass for the scaffold.
+- One canonical URL shared in two messages yields one link and two occurrences; repeated appearances within one message remain separate.
+- Replayed messages do not duplicate; edits reconcile; deletes hide content while preserving global link identity.
+- Private-only links never appear on the member surface; mixed private/public links reveal only public occurrence data.
+- OAuth state, session expiry, member removal, unsafe redirects, XSS-like text, oversized searches, and untrusted URL fetching are handled as specified.

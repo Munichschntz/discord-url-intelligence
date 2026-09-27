@@ -1,1 +1,19 @@
-# discord-url-intelligence
+# Discord Intel
+
+Discord Intel is planned as a searchable archive of links and nearby discussion from explicitly allowlisted channels in one Discord server. It uses an authorized bot; it never uses a user token or self-bot. Account and permissions setup is documented below, and the Python scaffold is implemented. No bot connection or web application is implemented yet.
+
+## Discord Setup (Milestone 0)
+
+Complete these steps with a Discord application owner and a server administrator. Do not place credentials in this repository.
+
+1. In the [Discord Developer Portal](https://discord.com/developers/applications), create an application for this project and add a bot. Record the application (client) ID and bot name. Copy the bot token into a password manager; treat it like a password and never share it.
+2. In **Bot** settings, enable **Message Content Intent**. The collector needs this privileged intent to read message text. Do not enable unrelated privileged intents. The application must also request the message-content intent in its Gateway connection when the collector is implemented.
+3. Invite the bot only to the intended server. Use the installation/OAuth2 URL generator with the `bot` scope and only `View Channels` and `Read Message History` permissions. Do not grant Administrator, send-message, or manage permissions. The server administrator should verify the invite and restrict the bot's channel permissions to the channels selected for indexing.
+4. Enable Developer Mode in the Discord client, then copy the server (guild) ID and each selected channel ID. Keep a written distinction between the ingestion allowlist and the separate web-visible allowlist. The bot should have access only to configured source channels; do not add channels just because they contain useful links.
+5. Decide explicitly which source channels are readable by every member of the server. Put only those channel IDs on the future web-visible allowlist, and only after the server owner confirms their intended visibility and checks channel/category permission overrides. Leave this list empty otherwise. Web visibility is not implied by bot access.
+6. Configure OAuth2 **separately** from bot installation. Add the exact HTTPS callback URI for the future web app (ending in `/auth/callback`) to the application's redirect URLs. Record the OAuth client ID and client secret separately from the bot token; the client secret is not the bot token. The member sign-in flow will request only the `identify` scope. It will use a short-lived `state` value and the bot will check each signed-in user's current membership in the configured server; a successful Discord sign-in alone does not grant access. Do not use a user token or request broad guild-list/member-list scopes.
+7. Store the bot token, OAuth client secret, and a separately generated high-entropy web session secret in a password manager until the local application is scaffolded. Later, put runtime values only in the ignored local environment file or a system secret store; commit placeholders only in `.env.example`. GitHub and Hugging Face tokens are optional and are not needed for public content. Never paste secrets into source files, issue reports, chat, screenshots, or command history. Rotate a secret immediately if exposed.
+
+For remote member access, use an HTTPS hostname or authenticated HTTPS tunnel and register its exact callback URL. The application is intended to bind to loopback behind a proxy that exposes only the web app. Do not expose the bot, database, local model server, or future owner-only MCP endpoint.
+
+Official setup references: [Discord getting started](https://docs.discord.com/developers/quick-start/getting-started), [OAuth2](https://docs.discord.com/developers/topics/oauth2), [permissions](https://docs.discord.com/developers/topics/permissions), and [Get Guild Member](https://docs.discord.com/developers/resources/guild#get-guild-member).
