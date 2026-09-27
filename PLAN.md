@@ -6,8 +6,8 @@ Status is tracked here; detailed deliverables and acceptance criteria are in `di
 |---|---|---|---|
 | 0 | Discord accounts and permissions | Complete | None |
 | 1 | Scaffold and freeze specification | Complete | `pydantic-settings`, `python-dotenv`; dev: `ruff`, `mypy`, `pytest` |
-| 2 | SQLite and append-only migrations | Next | `aiosqlite` |
-| 3 | URL extraction and canonicalization | Not started | None planned |
+| 2 | SQLite and append-only migrations | Complete | `aiosqlite`; dev: `pytest-asyncio` |
+| 3 | URL extraction and canonicalization | Next | None planned |
 | 4 | Live Discord ingestion | Not started | `discord.py` |
 | 5 | Backfill, edits, and deletions | Not started | Reuse `discord.py` |
 | 6 | Durable enrichment worker | Not started | None planned |

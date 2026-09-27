@@ -1,3 +1,6 @@
+import sqlite3
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -32,3 +35,16 @@ def test_oauth_redirect_requires_exact_https_callback() -> None:
 def test_web_and_mcp_must_bind_loopback() -> None:
     with pytest.raises(ValidationError, match="loopback"):
         Settings(_env_file=None, mcp_host="0.0.0.0")
+
+
+def test_db_init_cli_is_idempotent(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    database_path = tmp_path / "cli.sqlite3"
+    arguments = ["db", "init", "--database", str(database_path)]
+
+    assert main(arguments) == 0
+    assert main(arguments) == 0
+
+    with sqlite3.connect(database_path) as connection:
+        applied = connection.execute("SELECT count(*) FROM schema_migrations").fetchone()
+    assert applied == (1,)
+    assert "Database initialized" in capsys.readouterr().out

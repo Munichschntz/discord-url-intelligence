@@ -1,3 +1,3 @@
 # Database migrations
 
-Versioned, append-only SQLite migrations will be added in Milestone 2. Applied migration files must never be edited; use a new migration for schema changes.
+`001_initial_schema.sql` defines the normalized core schema and internal/member-safe FTS5 indexes. Migrations use an ascending numeric filename prefix and are tracked by SHA-256 checksum. Applied migration files are immutable; make schema changes in a new higher-numbered migration.

@@ -6,6 +6,12 @@ The scaffold uses a `src/` layout, Python 3.12+, `uv`, Pydantic Settings, and a 
 
 No Discord client, database connection, HTTP provider, worker, or web server is implemented in this milestone. `discord-intel --help` is the only CLI behavior.
 
+## SQLite boundary (Milestone 2)
+
+`db/database.py` owns connection pragmas and ordered migration application. SQL files live in the repository `migrations/` directory and are included in built wheels; migration versions use a numeric prefix and SHA-256 checksums are stored in `schema_migrations`. A migration and its ledger record commit atomically. `db/transaction.py` provides the explicit `BEGIN IMMEDIATE` transaction boundary; repository methods accept a caller-owned connection so message, occurrence, and future job writes can share one transaction.
+
+`db/repository.py` provides parameterized upserts for guilds, channels, authors, messages, canonical links, and individual message-link occurrences. Link rows deduplicate by canonical URL; occurrence rows deduplicate only by `(message_id, occurrence_index)`. `discord-intel db init` applies pending migrations idempotently. FTS5 tables are external-content indexes maintained by SQL triggers on their document tables.
+
 ## Intended boundaries
 
 - `config.py`: validated, shared process configuration.

@@ -4,6 +4,7 @@ This scaffold contains no external API integration. These official references ar
 
 | Integration | Official references | Status |
 |---|---|---|
+| `aiosqlite` and SQLite persistence | [`aiosqlite` stable API](https://aiosqlite.omnilib.dev/en/stable/api.html), [SQLite foreign keys](https://sqlite.org/foreignkeys.html), [SQLite PRAGMAs](https://sqlite.org/pragma.html), [SQLite FTS5](https://sqlite.org/fts5.html) | Checked 2026-09-27 for Milestone 2; see contract below |
 | Discord Gateway, intents, messages | [Gateway events](https://docs.discord.com/developers/events/gateway), [message resource](https://docs.discord.com/developers/resources/message), [Gateway intents](https://docs.discord.com/developers/events/gateway#gateway-intents) | Verify for Milestone 4 |
 | Discord channel history and rate limits | [Get channel messages](https://docs.discord.com/developers/resources/channel#get-channel-messages), [rate limits](https://docs.discord.com/developers/topics/rate-limits) | Verify for Milestone 5 |
 | Discord OAuth and guild membership | [OAuth2](https://docs.discord.com/developers/topics/oauth2), [Get Current User](https://docs.discord.com/developers/resources/user#get-current-user), [Get Guild Member](https://docs.discord.com/developers/resources/guild#get-guild-member) | Setup references checked for Milestone 0; verify endpoint permissions for Milestone 10A |
@@ -13,3 +14,11 @@ This scaffold contains no external API integration. These official references ar
 | SQLite FTS5 and backup | [FTS5](https://www.sqlite.org/fts5.html), [online backup API](https://www.sqlite.org/backup.html) | Verify for Milestones 2, 9, and 16 |
 | LM Studio local endpoints | [OpenAI-compatible API](https://lmstudio.ai/docs/developer/openai-compat), [structured output](https://lmstudio.ai/docs/developer/openai-compat/structured-output), [embeddings](https://lmstudio.ai/docs/developer/openai-compat/embeddings) | Verify for Milestones 12 and 13 |
 | MCP Python SDK v2 | [Official SDK docs](https://py.sdk.modelcontextprotocol.io/), [SDK repository](https://github.com/modelcontextprotocol/python-sdk), [run/deployment](https://py.sdk.modelcontextprotocol.io/run/) | Verify v2 API and transport for Milestone 11 |
+
+## Milestone 2 contract
+
+- The official `aiosqlite` API exposes an awaitable connection factory, async connection context management, and awaitable `execute`, `commit`, `rollback`, and `close` operations. Use parameter binding for values; never interpolate user-controlled values into SQL.
+- SQLite foreign-key enforcement is connection-local, so set `PRAGMA foreign_keys=ON` on every opened connection, before beginning a transaction. Set `journal_mode=WAL`, `synchronous=NORMAL`, and a nonzero `busy_timeout` at connection initialization.
+- Use SQLite transactions for migration application and repository write batches. Roll back on any exception so schema changes and migration ledger rows are atomic.
+- FTS5 external-content tables refer to a content table and its rowid; the application must keep the index synchronized with insert/update/delete triggers. Delete synchronization uses the FTS5 delete command with the old indexed values.
+- The development runtime was checked locally with SQLite 3.45.1; creating an FTS5 table, inserting a row, and querying it with `MATCH` succeeded. FTS5 is a SQLite compile-time capability; fail initialization clearly if unavailable.

@@ -2,7 +2,7 @@
 
 ## Current state
 
-The repository has completed the initial Discord account and permission setup guide in `README.md` and the Milestone 1 scaffold. Configuration validation and CLI help are available. The application does not yet connect to Discord, create a database, or run a web server.
+The repository has completed the initial Discord account and permission setup guide in `README.md`, the Python scaffold, and Milestone 2 SQLite persistence. `discord-intel db init` is available. URL extraction and Discord collection are not implemented yet; the application does not run a web server.
 
 ## Prerequisites
 
@@ -29,9 +29,12 @@ Important settings include the bot token, guild ID, source and web-visible chann
 ```sh
 uv sync --group dev
 uv run discord-intel --help
+uv run discord-intel db init
 ```
 
-Only `--help` is implemented during Milestone 1. Collector, worker, web, database, and MCP run modes will be introduced in their respective milestones and documented here before release.
+`discord-intel db init` creates the configured database parent directory, enables SQLite WAL/foreign-key settings, and applies pending append-only migrations. Override the configured database path with `--database PATH`. Repeating the command is safe; applied migration checksums are verified and modified/deleted migration files are rejected. Local database files are ignored by Git.
+
+Collector, worker, web, and MCP run modes will be introduced in their respective milestones and documented here before release.
 
 ## Validation
 
@@ -45,6 +48,7 @@ uv run pytest -q
 
 - `uv: command not found`: install `uv` and ensure its executable directory is on `PATH`.
 - Settings validation fails: use decimal-string Discord IDs, make the web-visible IDs a subset of source IDs, configure the exact HTTPS `/auth/callback` URL, and keep web/MCP hosts on loopback.
+- Database initialization reports that FTS5 is unavailable: use a Python build whose bundled SQLite includes FTS5.
 - The application does not collect or serve data yet: those features are later milestones, not setup failures.
 
 Remote deployment instructions, OAuth operation, backups, and recovery will be added with the milestones that implement those features.
