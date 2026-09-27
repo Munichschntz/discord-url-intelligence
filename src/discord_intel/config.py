@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     discord_oauth_redirect_uri: str | None = None
     web_session_secret: SecretStr | None = None
     database_path: Path = Path("data/discord-intel.sqlite3")
+    topic_rules_path: Path | None = None
     github_token: SecretStr | None = None
     hf_token: SecretStr | None = None
     lm_studio_base_url: str = "http://127.0.0.1:1234/v1"

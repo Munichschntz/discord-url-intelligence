@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-Discord Intel archives messages from one configured Discord guild and explicitly allowlisted channels, extracts shared HTTP(S) URLs, enriches links through provider adapters, and provides searchable owner and member views. The first useful release is Milestone 10A. Collection, metadata, and lexical search must not depend on LM Studio. There is no Discord connection or provider integration in the current scaffold.
+Discord Intel archives messages from one configured Discord guild and explicitly allowlisted channels, extracts shared HTTP(S) URLs, and categorizes them into topics across channels. The MVP is a searchable member website at Milestone 10A, using stored URLs and Discord text. Provider enrichment and owner/AI features are deferred. Collection and search must not depend on LM Studio. Discord ingestion and local topic previews are implemented; the website is not yet implemented.
 
 ## Invariants
 
@@ -54,9 +54,28 @@ Index channel/time/message for context, link/message for occurrences, job availa
 
 ## Lifecycle and search
 
+### MVP topic categories
+
+Categories span Discord channels. A link may belong to several topics, initially Coding,
+Image Generation, Models, Tutorials, and Tools. Configurable literal keywords/phrases match
+the canonical URL and current accompanying message text, case-insensitively at word
+boundaries. Unmatched live links belong only to Uncategorized. Rules are not regular
+expressions; punctuation separates words. Other URLs in the same message are removed
+before classifying its prose. The prose applies to every link in that message.
+
+Compute categories from current data on read for this MVP, without new tables, AI calls,
+or modifying manual/provider tags. Existing links need no backfill. Edits, deletions,
+visibility changes, and rule changes are reflected on the next query (restart a long-lived
+service after changing its rule file). Member categories use only live occurrences in the
+configured guild and channels present in both allowlists and marked web-visible in the
+database. Private messages must not affect member categories, counts, or ordering.
+
+Detailed provider enrichment and optional owner/AI features are deferred until after the
+searchable member website. Search must initially work from stored URLs and Discord text.
+
 Status values are `NEW`, `TRY`, `WATCH`, `TESTING`, `DONE`, `BLOCKED`, and `ARCHIVED`; new links default to `NEW`. Validate every change. Manual tags and notes survive provider refresh and summary regeneration.
 
-Search supports channel, author, domain, resource type, tag, status, and date filters. Default result limit is 20, hard maximum 50. Convert user text to safe FTS terms. Discussion context contains at most three prior and three following live messages in the same channel. Member-facing documents and result fields must be derived only from visible occurrences.
+MVP search supports keywords and topic categories, including Uncategorized; matching a topic never depends on a provider service. Channel, author, domain, resource type, tag, status, and date filters remain future enhancements. Default result limit is 20, hard maximum 50. Convert user text to safe FTS terms. Discussion context contains at most three prior and three following live messages in the same channel. Member-facing documents and result fields must be derived only from visible occurrences.
 
 ## Acceptance criteria
 

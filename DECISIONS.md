@@ -46,3 +46,21 @@ None recorded. Recheck the official contract at the milestone where each integra
 - Use a first-match provider registry selected by canonical URL and resource type. Leave unsupported jobs pending until a concrete adapter is implemented; do not misreport no-op enrichment as success.
 - Retry adapter errors on the five planned delays, failing after six total attempts; explicitly permanent failures are terminal immediately. Bound adapter calls to five minutes and recover claims older than fifteen minutes at startup.
 - Persist provider metadata and enqueue search rebuild work atomically. Search execution remains Milestone 9. No external API was integrated in Milestone 6, so no new official API contract applies.
+
+## 2026-09-27: Topic categories and smaller MVP
+
+- The user requested topic categories spanning channels, and a simple searchable site for
+  friends without GitHub runners/agents. Insert Milestone 6A for categories and move search
+  and the member website ahead of provider integrations. Provider integrations and optional
+  owner/AI features are deferred beyond the MVP.
+- Use configurable literal word/phrase rules, with multiple topics per link and an automatic
+  Uncategorized fallback. A TOML file replaces the defaults; no dependency is needed.
+- Classify current URLs and message prose on read. Avoid a category cache, new schema,
+  assignment jobs, or changes to manual/provider tags until archive size warrants them.
+  This makes existing data, edits, deletes, and visibility changes work without a rebuild.
+- The owner preview uses current ingestion allowlists. The separate member entry point
+  filters current guild, both channel allowlists, database visibility, and deleted messages
+  before computing categories, counts, and last-mentioned order. Web authentication is still
+  required in Milestone 10A; a local member preview does not replace it.
+- No external API integration or schema change was introduced. Existing migrations remain
+  unchanged. Validation: Ruff and mypy passed; all 103 offline tests passed.

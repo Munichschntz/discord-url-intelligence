@@ -13,7 +13,14 @@
 - [x] Milestone 4 — live Discord ingestion complete.
 - [x] Milestone 5 — backfill, edits, and deletions complete.
 - [x] Milestone 6 — durable enrichment worker complete.
-- [ ] Milestone 7 — next: GitHub metadata.
+- [x] Milestone 6A — configurable cross-channel topic categories complete.
+- [ ] Milestone 9 — next: keyword/topic search over stored URLs and Discord text.
+
+> **MVP scope revision (2026-09-27):** The user prioritizes one searchable library for
+> friends with topic categories spanning channels. The current sequence is 6A, 9, 10A.
+> Provider integrations (7-8C), advanced filters, and optional owner/AI features (10B-16)
+> are deferred beyond this MVP. The original briefs below remain future reference, not
+> prerequisites for releasing member search. No GitHub runners or agents are part of the app.
 
 > **For the coding assistant:** This is a build specification, not a request to implement every milestone in one pass. Start at the first incomplete milestone in `PLAN.md`, finish and validate it, update the project documents, and stop. Verify the current official documentation before writing any integration code. This document is self-contained; do not assume access to the conversation that produced it.
 
@@ -190,7 +197,19 @@ Start with `NEW`, `TRY`, `WATCH`, `TESTING`, `DONE`, `BLOCKED`, and `ARCHIVED`. 
 
 **Assistant brief:** `Implement Milestone 6 only: durable jobs, a single worker, atomic claims, retry/backoff, stale-running recovery and a provider registry. Provider failures cannot modify Discord ingestion or delete links. Test with fake adapters, including successful search-rebuild scheduling. No Redis/Celery/RQ.`
 
-### Milestone 7 — GitHub metadata
+### Milestone 6A — Cross-channel topic categories (complete)
+
+**Deliverables:** Configurable literal keyword rules against canonical URLs and current
+Discord message prose. Default topics: Coding, Image Generation, Models, Tutorials, Tools.
+Allow multiple topics per link; use Uncategorized only when nothing matches. Read-time
+classification covers existing data and reflects edits/deletes without a migration or AI.
+Provide an owner-local category preview and an independently scoped member query service.
+
+**Acceptance:** Offline tests cover overlapping topics, word boundaries, custom rules,
+repeated occurrences, cross-channel evidence, edits/deletes, visibility revocation,
+private/public overlap, bounded results, and the local command.
+
+### Milestone 7 — GitHub metadata (deferred beyond MVP)
 
 **Deliverables:** Verify and document official REST contract before coding. Call `api.github.com` with `Accept: application/vnd.github+json`, a real `User-Agent`, and `X-GitHub-Api-Version: 2026-03-10`; add `Authorization: Bearer ...` only when a token is configured. For repository URLs retrieve `/repos/{owner}/{repo}`, `/topics`, `/readme` sequentially; store full name, description, homepage, language, stars, forks, open issues, archived/fork/visibility/license, dates, default branch, topics and decoded README. Cache ETag and Last-Modified *per endpoint* and issue conditional refreshes; treat 304 as success without erasing previous content. Respect Retry-After and rate-limit reset. Deep GitHub URLs retain distinct identity and may reuse repository metadata without pretending the issue is the repository homepage.
 
@@ -223,6 +242,13 @@ Start with `NEW`, `TRY`, `WATCH`, `TESTING`, `DONE`, `BLOCKED`, and `ARCHIVED`. 
 **Assistant brief:** `Implement Milestone 8C only: bounded generic-web enrichment with httpx and trafilatura. Treat Discord URLs as untrusted. Enforce public-destination IP policy on initial URLs and redirects, including DNS-to-connect safety, timeouts, size limits and content types. Test SSRF, redirects, huge bodies and normal articles.`
 
 ### Milestone 9 — FTS5 search and bounded context
+
+**MVP scope override:** Implement keyword search and the Milestone 6A topic filter,
+including Uncategorized, from stored URLs and current Discord text. Preserve the separate
+member-safe index, bounded context, safe query parsing, and limits below. Provider metadata
+is optional input, not a dependency. Advanced channel/author/domain/type/tag/status/date
+filters in the original brief below are deferred. Add privacy tests proving private topic
+evidence never influences member filtering, counts, or ranking.
 
 **Deliverables:** Rebuild one owner/internal search document per link from title, description, provider tags, body/README/card, and *current* Discord mentions/excerpts. Build a separate web-safe document from provider data plus *only* live mentions/context in web-visible channels, and include only links having such a mention. Scope membership and channel visibility before search ranking and snippet extraction. Weight title highest, description/tags high, visible Discord context medium/high, body medium. Convert user text into safe tokenized FTS expressions; never pass arbitrary `MATCH` syntax directly. Filters: channel, author, domain, resource type, tag, status, since, until. Default limit 20, hard maximum 50. A discussion-context query returns the anchor plus at most three prior and three following messages in the same channel, excluding deleted messages. Search returns compact results, not whole READMEs.
 

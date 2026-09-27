@@ -33,6 +33,7 @@ Raw edits use current payload content when available and fetch the current messa
 ## Intended boundaries
 
 - `config.py`: validated, shared process configuration.
+- `topics.py`: literal topic rules and separate owner/member category queries.
 - `cli.py`: command registration and lightweight process entry points.
 - `db/`: SQLite connection, migrations, and repositories (Milestone 2 onward).
 - `urls/`: extraction and canonical identity (Milestone 3 onward).
@@ -61,3 +62,26 @@ uv run pytest -q
 `providers/` defines a URL/resource-type selection protocol and structured metadata result. No network adapters are registered until their respective milestones. Unsupported links remain pending without spending attempts. Successful metadata persistence, link state, job completion, and deduplicated `search_rebuild` enqueue commit together. Search rebuild jobs remain pending until Milestone 9.
 
 Transient and unexpected adapter errors retry after 30 seconds, 2 minutes, 10 minutes, 1 hour, and 6 hours; the sixth failed attempt is terminal. Permanent failures stop immediately. Error records retain exception class names only, avoiding provider exception text that could contain secrets. Cancellation leaves the claim recoverable. The existing schema suffices; no migration was changed or added.
+
+## Topic boundary (Milestone 6A)
+
+`topics.py` owns validated TOML/default rules and read-time classification. Each keyword is
+normalized to case-folded words; punctuation separates words. Each URL/message is matched
+independently, so a phrase cannot span messages. Strip all URLs from message prose, then
+classify the target canonical URL independently. This avoids another URL's hostname or slug
+assigning a topic to the target. Message prose still applies to every URL in that message.
+
+`TopicService.owner_links` and `member_links` read live evidence from existing tables in a
+single scoped SQL query. DISTINCT message rows avoid counting repeated appearances twice;
+the stored occurrence rows remain unchanged. Member scoping happens before classification,
+counts, ordering, or pagination. No source content or unscoped link timestamps enter the
+member result. The future web layer must authenticate before calling `member_links`.
+
+`discord-intel topics` previews counts and recent links locally. `--category`, `--limit`,
+and `--offset` provide bounded browsing; `--member-view` applies member data scope without
+opening a server. Settings optionally point `TOPIC_RULES_PATH` to a replacement TOML file.
+Rules load once per service instance. The preview scans current evidence rather than storing
+derived classifications; revisit indexing if actual archive size makes this slow.
+
+The next milestone builds keyword/topic search from URLs and Discord text, followed by
+the member website. Full provider metadata is no longer a prerequisite for the MVP.

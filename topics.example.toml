@@ -1,0 +1,9 @@
+# Copy to topics.toml and set TOPIC_RULES_PATH=topics.toml in .env to customize.
+# This replaces the built-in rules. Any matching keyword assigns a topic.
+# Categories can overlap. Uncategorized is automatic; do not define it here.
+[topics]
+Coding = ["coding", "programming", "python", "javascript", "typescript", "github.com"]
+"Image Generation" = ["image generation", "text to image", "stable diffusion", "comfyui", "midjourney"]
+Models = ["model", "models", "llm", "llms", "huggingface.co"]
+Tutorials = ["tutorial", "tutorials", "guide", "walkthrough", "how to"]
+Tools = ["tool", "tools", "cli", "utility", "utilities"]

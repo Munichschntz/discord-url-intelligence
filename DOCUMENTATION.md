@@ -2,7 +2,7 @@
 
 ## Current state
 
-The repository has completed the initial Discord account and permission setup guide in `README.md`, the Python scaffold, SQLite persistence, URL extraction, live collection, and restartable backfill with message edit/delete handling. `discord-intel run` collects live messages. The application does not run a web server.
+The repository supports Discord collection/backfill, message edits and deletions, durable jobs, and local previews of topic categories across channels. `discord-intel run` collects live messages. The application does not run a web server yet. Keyword/topic search and the member website are next; provider enrichment and AI features are deferred beyond the MVP.
 
 ## Prerequisites
 
@@ -45,6 +45,66 @@ Raw message edits update stored content and reconcile that message's URL occurre
 Before running it, configure `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, and `ALLOWED_SOURCE_CHANNEL_IDS` in the ignored local `.env`. In the Discord Developer Portal, enable Message Content Intent for the bot. Applications above Discord's privileged-intent review threshold must obtain approval. The bot needs only `View Channels` and `Read Message History` in the selected channels. Keep `WEB_VISIBLE_CHANNEL_IDS` separate; this collector does not publish message data to a website.
 
 The web and MCP run modes are not implemented yet.
+
+## Topic categories (Milestone 6A)
+
+Topics group links from different channels. A link can match multiple topics. The defaults
+are Coding, Image Generation, Models, Tutorials, and Tools. Links without a match appear
+under Uncategorized. Classification uses each link's canonical URL and the current text of
+messages sharing it. Keywords are case-insensitive whole words or phrases; punctuation
+separates words, so `text-to-image` matches `text to image`. Matching is literal, not AI or
+regular expressions. Other URLs in the same message are excluded from its text, but all
+links in that message share its prose. These simple heuristics may misclassify ambiguous
+messages; tune the rules against your actual archive.
+
+Preview your locally collected links:
+
+```sh
+uv run discord-intel topics
+uv run discord-intel topics --category "Coding"
+uv run discord-intel topics --category "Uncategorized" --limit 20 --offset 0
+uv run discord-intel topics --member-view
+```
+
+The command prints JSON with unique-link counts for every topic and a page of matching
+links, newest mention first. Counts span the full scoped archive, even when filtering or
+paging. One link can contribute to several topic counts. `message_count` counts distinct
+messages, while repeated URL occurrences remain separately preserved in the database.
+The default page size is 20; the maximum is 50. Category names are case-sensitive.
+
+This is an owner-local preview, not the friends' website. By default it uses all currently
+allowlisted source channels in the configured guild. `--member-view` includes only channels
+also in `WEB_VISIBLE_CHANNEL_IDS` **and** explicitly marked `web_visible` in the database.
+It returns no links by default. It does not grant visibility or perform Discord sign-in;
+the future website will validate channel visibility and authenticate members before using
+the member query service. Do not share owner output as a member-safe export.
+
+To customize categories, copy `topics.example.toml` to `topics.toml`, edit its `[topics]`
+table, and add this local setting:
+
+```dotenv
+TOPIC_RULES_PATH=topics.toml
+```
+
+For example, a complete replacement rule file can be:
+
+```toml
+[topics]
+Coding = ["python", "typescript", "coding"]
+"Image Generation" = ["comfyui", "stable diffusion"]
+Audio = ["speech", "tts", "music"]
+```
+
+Custom files replace the defaults. Do not define Uncategorized; it is automatic. Rules
+allow 1-30 uniquely named topics, each with 1-100 keywords. Missing, malformed, or invalid
+files produce an error instead of silently using the defaults. Omit `TOPIC_RULES_PATH` to
+restore defaults. The next CLI invocation uses the new rules; restart a long-lived service
+after editing its rule file.
+
+Existing links need no migration, reimport, or categorization job. Categories are calculated
+on read from live messages, so edits, deleted mentions, and changes to channel visibility
+take effect on the next query. No dependencies or external services were added. This MVP
+preview scans the scoped archive; it is not yet a full-text search endpoint.
 
 ## Validation
 
