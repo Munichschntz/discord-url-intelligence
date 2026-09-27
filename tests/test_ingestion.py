@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -88,3 +89,75 @@ async def test_shared_ingestion_archives_messages_and_deduplicates_link_jobs(
             )
         ).fetchone()
         assert archived[0] == 0
+
+
+@pytest.mark.asyncio
+async def test_checkpoint_resume_edit_reconcile_and_soft_delete(tmp_path: Path) -> None:
+    database = Database(tmp_path / "lifecycle.sqlite3")
+    await database.initialize()
+    settings = Settings(
+        _env_file=None,
+        discord_guild_id="100",
+        allowed_source_channel_ids=["200"],
+    )
+    service = IngestionService(database, settings)
+    original = _message(
+        "400",
+        "https://github.com/owner/alpha https://github.com/owner/alpha",
+    )
+
+    assert await service.prepare_backfill("100", "Example Guild", "200", "links", "text") is None
+    await service.ingest_message(original, update_backfill_checkpoint=True)
+    resumed_service = IngestionService(database, settings)
+    assert await resumed_service.get_backfill_checkpoint("200") == "400"
+
+    one_occurrence = replace(
+        original,
+        content="https://github.com/owner/alpha",
+        edited_at="2026-09-27T00:05:00.000000Z",
+    )
+    await resumed_service.ingest_message(one_occurrence, reconcile_occurrences=True)
+    async with database.connection() as connection:
+        occurrence_count = await (
+            await connection.execute(
+                "SELECT count(*) FROM message_links WHERE message_id = '400'"
+            )
+        ).fetchone()
+    assert occurrence_count[0] == 1
+
+    edited = replace(
+        one_occurrence,
+        content="https://github.com/owner/beta",
+        edited_at="2026-09-27T00:06:00.000000Z",
+    )
+    await resumed_service.ingest_message(edited, reconcile_occurrences=True)
+    assert await resumed_service.soft_delete_message("100", "200", "400")
+    await resumed_service.finish_backfill("200", "complete")
+
+    async with database.connection() as connection:
+        counts = await (
+            await connection.execute(
+                "SELECT (SELECT count(*) FROM links), "
+                "(SELECT count(*) FROM message_links), "
+                "(SELECT count(*) FROM messages WHERE deleted_at IS NOT NULL)"
+            )
+        ).fetchone()
+        assert tuple(counts) == (2, 1, 1)
+        association = await (
+            await connection.execute(
+                """
+                SELECT links.canonical_url
+                FROM message_links
+                JOIN links USING (link_id)
+                WHERE message_links.message_id = '400'
+                """
+            )
+        ).fetchone()
+        assert association[0] == "https://github.com/owner/beta"
+        checkpoint = await (
+            await connection.execute(
+                "SELECT last_message_id, backfill_state "
+                "FROM channel_checkpoints WHERE channel_id = '200'"
+            )
+        ).fetchone()
+        assert tuple(checkpoint) == ("400", "complete")

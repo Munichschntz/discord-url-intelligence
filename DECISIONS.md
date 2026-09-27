@@ -33,3 +33,10 @@ None recorded. Recheck the official contract at the milestone where each integra
 - Keep the shared message ingestion service independent from Discord event objects. Gateway callbacks only apply allowlists, parse URLs, and persist message/occurrence/job rows transactionally; providers remain background work.
 - Compare exact decimal string IDs for configured guild/channel allowlists and ignore only this bot's own user ID.
 - No discrepancy from the current Discord Gateway or discord.py documentation was found.
+
+## 2026-09-27: Backfill and raw message lifecycle
+
+- Reuse the shared ingestion service for live messages and sequential oldest-first backfill. Advance the existing channel checkpoint in the same transaction as each accepted message; this favors restart safety and MVP simplicity over larger uncommitted batches.
+- Use raw edit/delete events so cache eviction does not lose lifecycle changes. Use raw edit content when present and fetch the current Discord message only when the payload/cache cannot provide it.
+- Reconcile a message's URL occurrence rows atomically on edit. Soft-delete messages without deleting their occurrences or global link rows.
+- No schema migration is needed because the initial schema already contains `channel_checkpoints` and the message deletion marker.

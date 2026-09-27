@@ -22,7 +22,13 @@ No Discord client, database connection, HTTP provider, worker, or web server is 
 
 `ingest/service.py` accepts plain message data, independently enforces the same allowlist, extracts/canonicalizes URLs, and transactionally upserts guild, channel, author, message, link occurrences, and pending enrichment jobs. No Discord types or network provider calls enter the shared service.
 
-`discord-intel run` initializes the configured database before connecting the bot. Live ingestion is implemented; backfill, edits, deletes, and the enrichment worker remain later milestones.
+`discord-intel run` initializes the configured database before connecting the bot. Live collection, backfill, and message lifecycle handling are implemented; the enrichment worker remains a later milestone.
+
+## Backfill and message lifecycle (Milestone 5)
+
+`discord-intel backfill --channel-id ID` iterates the selected allowlisted channel oldest-first using `discord.py` history. Each message and checkpoint update share the ingestion transaction; the checkpoint advances per message, including ignored bot messages, so restarts resume after the last safely handled ID.
+
+Raw edits use current payload content when available and fetch the current message only on cache misses. Occurrences for that message are replaced transactionally. Raw deletes set the soft-delete timestamp and retain the message, occurrences, and global links for audit.
 
 ## Intended boundaries
 

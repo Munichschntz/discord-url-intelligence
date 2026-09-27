@@ -12,11 +12,17 @@ from discord_intel.discord import DiscordCollector
 from discord_intel.ingest import IngestionService
 
 
-async def _run_collector(settings: Settings) -> None:
+async def _run_collector(
+    settings: Settings, backfill_channel_id: str | None = None
+) -> int | None:
     database = Database(settings.database_path)
     await database.initialize()
-    collector = DiscordCollector(settings, IngestionService(database, settings))
-    await collector.run_bot()
+    collector = DiscordCollector(
+        settings,
+        IngestionService(database, settings),
+        backfill_channel_id=backfill_channel_id,
+    )
+    return await collector.run_bot()
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -34,6 +40,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Database file path (defaults to DATABASE_PATH)",
     )
     commands.add_parser("run", help="Start the allowlisted Discord collector")
+    backfill_parser = commands.add_parser("backfill", help="Backfill one allowlisted channel")
+    backfill_parser.add_argument("--channel-id", required=True)
     return parser
 
 
@@ -49,15 +57,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         asyncio.run(Database(database_path).initialize())
         print(f"Database initialized: {database_path}")
         return 0
-    if parsed.command == "run":
+    if parsed.command in {"run", "backfill"}:
         settings = load_settings()
         if settings.discord_bot_token is None:
-            parser.error("DISCORD_BOT_TOKEN is required for `discord-intel run`")
+            parser.error("DISCORD_BOT_TOKEN is required for collector commands")
         if settings.discord_guild_id is None:
-            parser.error("DISCORD_GUILD_ID is required for `discord-intel run`")
+            parser.error("DISCORD_GUILD_ID is required for collector commands")
         if not settings.allowed_source_channel_ids:
             parser.error("ALLOWED_SOURCE_CHANNEL_IDS must include at least one channel")
-        asyncio.run(_run_collector(settings))
+        backfill_channel_id = getattr(parsed, "channel_id", None)
+        if backfill_channel_id is not None and backfill_channel_id not in (
+            settings.allowed_source_channel_ids
+        ):
+            parser.error("--channel-id must be in ALLOWED_SOURCE_CHANNEL_IDS")
+        backfill_count = asyncio.run(_run_collector(settings, backfill_channel_id))
+        if backfill_channel_id is not None:
+            print(f"Backfill complete: {backfill_count or 0} messages")
         return 0
     parser.print_help()
     return 0

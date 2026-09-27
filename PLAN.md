@@ -9,8 +9,8 @@ Status is tracked here; detailed deliverables and acceptance criteria are in `di
 | 2 | SQLite and append-only migrations | Complete | `aiosqlite`; dev: `pytest-asyncio` |
 | 3 | URL extraction and canonicalization | Complete | `linkify-it-py`, `url-normalize` |
 | 4 | Live Discord ingestion | Complete | `discord.py` |
-| 5 | Backfill, edits, and deletions | Next | Reuse `discord.py` |
-| 6 | Durable enrichment worker | Not started | None planned |
+| 5 | Backfill, edits, and deletions | Complete | Reuse `discord.py` |
+| 6 | Durable enrichment worker | Next | None planned |
 | 7 | GitHub metadata | Not started | `httpx` |
 | 8A | Hugging Face models | Not started | `huggingface_hub` |
 | 8B | Hacker News | Not started | Reuse `httpx` |

@@ -45,7 +45,13 @@ class IngestionService:
         self.settings = settings
         self.repository = repository or Repository()
 
-    async def ingest_message(self, message: IncomingMessage) -> IngestionResult:
+    async def ingest_message(
+        self,
+        message: IncomingMessage,
+        *,
+        reconcile_occurrences: bool = False,
+        update_backfill_checkpoint: bool = False,
+    ) -> IngestionResult:
         if (
             message.guild_id != self.settings.discord_guild_id
             or message.channel_id not in self.settings.allowed_source_channel_ids
@@ -88,6 +94,11 @@ class IngestionService:
                     is_bot=message.author_is_bot,
                     timestamp=ingested_at,
                 )
+                if reconcile_occurrences:
+                    await connection.execute(
+                        "DELETE FROM message_links WHERE message_id = ?",
+                        (message.message_id,),
+                    )
                 await self.repository.upsert_message(
                     connection,
                     message.message_id,
@@ -126,6 +137,14 @@ class IngestionService:
                         connection, link_id, ingested_at
                     ):
                         jobs_enqueued += 1
+                if update_backfill_checkpoint:
+                    await self.repository.upsert_channel_checkpoint(
+                        connection,
+                        message.channel_id,
+                        message.message_id,
+                        ingested_at,
+                        "running",
+                    )
 
         return IngestionResult(
             message_id=message.message_id,
@@ -133,3 +152,89 @@ class IngestionService:
             occurrence_count=len(parsed_urls),
             enrichment_jobs_enqueued=jobs_enqueued,
         )
+
+    async def prepare_backfill(
+        self,
+        guild_id: str,
+        guild_name: str,
+        channel_id: str,
+        channel_name: str,
+        channel_kind: str,
+    ) -> str | None:
+        if (
+            guild_id != self.settings.discord_guild_id
+            or channel_id not in self.settings.allowed_source_channel_ids
+        ):
+            raise ValueError("Backfill channel is outside the configured source allowlist")
+
+        now = utc_timestamp()
+        async with self.database.connection() as connection:
+            async with transaction(connection):
+                await self.repository.upsert_guild(
+                    connection, guild_id, guild_name, timestamp=now
+                )
+                await self.repository.upsert_channel(
+                    connection,
+                    channel_id,
+                    guild_id,
+                    channel_name,
+                    channel_kind,
+                    timestamp=now,
+                )
+                await self.repository.upsert_channel_checkpoint(
+                    connection, channel_id, None, now, "running"
+                )
+                return await self.repository.get_channel_checkpoint(connection, channel_id)
+
+    async def advance_backfill_checkpoint(
+        self, guild_id: str, channel_id: str, message_id: str
+    ) -> None:
+        if (
+            guild_id != self.settings.discord_guild_id
+            or channel_id not in self.settings.allowed_source_channel_ids
+        ):
+            raise ValueError("Backfill channel is outside the configured source allowlist")
+        async with self.database.connection() as connection:
+            async with transaction(connection):
+                await self.repository.upsert_channel_checkpoint(
+                    connection,
+                    channel_id,
+                    message_id,
+                    utc_timestamp(),
+                    "running",
+                )
+
+    async def get_backfill_checkpoint(self, channel_id: str) -> str | None:
+        async with self.database.connection() as connection:
+            return await self.repository.get_channel_checkpoint(connection, channel_id)
+
+    async def finish_backfill(self, channel_id: str, state: str) -> None:
+        if channel_id not in self.settings.allowed_source_channel_ids:
+            raise ValueError("Backfill channel is outside the configured source allowlist")
+        if state not in {"complete", "failed"}:
+            raise ValueError("Backfill state must be complete or failed")
+        async with self.database.connection() as connection:
+            async with transaction(connection):
+                await self.repository.upsert_channel_checkpoint(
+                    connection, channel_id, None, utc_timestamp(), state
+                )
+
+    async def soft_delete_message(
+        self, guild_id: str, channel_id: str, message_id: str
+    ) -> bool:
+        if (
+            guild_id != self.settings.discord_guild_id
+            or channel_id not in self.settings.allowed_source_channel_ids
+        ):
+            return False
+        async with self.database.connection() as connection:
+            async with transaction(connection):
+                cursor = await connection.execute(
+                    """
+                    UPDATE messages
+                    SET deleted_at = COALESCE(deleted_at, ?)
+                    WHERE message_id = ? AND channel_id = ?
+                    """,
+                    (utc_timestamp(), message_id, channel_id),
+                )
+                return cursor.rowcount == 1

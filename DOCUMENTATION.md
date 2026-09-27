@@ -2,7 +2,7 @@
 
 ## Current state
 
-The repository has completed the initial Discord account and permission setup guide in `README.md`, the Python scaffold, Milestone 2 SQLite persistence, Milestone 3 URL extraction/canonicalization, and Milestone 4 live collection. `discord-intel run` archives messages from the configured source channels. The application does not run a web server.
+The repository has completed the initial Discord account and permission setup guide in `README.md`, the Python scaffold, SQLite persistence, URL extraction, live collection, and restartable backfill with message edit/delete handling. `discord-intel run` collects live messages. The application does not run a web server.
 
 ## Prerequisites
 
@@ -31,15 +31,20 @@ uv sync --group dev
 uv run discord-intel --help
 uv run discord-intel db init
 uv run discord-intel run
+uv run discord-intel backfill --channel-id 123456789012345678
 ```
 
 `discord-intel db init` creates the configured database parent directory, enables SQLite WAL/foreign-key settings, and applies pending append-only migrations. Override the configured database path with `--database PATH`. Repeating the command is safe; applied migration checksums are verified and modified/deleted migration files are rejected. Local database files are ignored by Git.
 
 `discord-intel run` initializes the database, connects the authorized bot to Discord, and archives every message from the configured guild and source-channel allowlist. Valid HTTP(S) URLs become occurrence rows and pending enrichment jobs; no provider requests run in Gateway callbacks. Stop the collector with `Ctrl+C`.
 
+`discord-intel backfill --channel-id ID` imports one allowlisted channel oldest-first. It uses the same ingestion service as live collection and commits each message together with its channel checkpoint. Re-running resumes after the last committed message. The bot needs `View Channel` and `Read Message History` in that channel.
+
+Raw message edits update stored content and reconcile that message's URL occurrences; raw deletes set `deleted_at` while preserving links and occurrence history. No message history is fetched outside the configured guild/channel allowlist.
+
 Before running it, configure `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, and `ALLOWED_SOURCE_CHANNEL_IDS` in the ignored local `.env`. In the Discord Developer Portal, enable Message Content Intent for the bot. Applications above Discord's privileged-intent review threshold must obtain approval. The bot needs only `View Channels` and `Read Message History` in the selected channels. Keep `WEB_VISIBLE_CHANNEL_IDS` separate; this collector does not publish message data to a website.
 
-Backfill, edit/delete reconciliation, worker, web, and MCP run modes are not implemented yet. The collector archives live events only.
+The enrichment worker, web, and MCP run modes are not implemented yet.
 
 ## Validation
 

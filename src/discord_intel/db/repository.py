@@ -45,7 +45,7 @@ class Repository:
         name: str,
         kind: str,
         *,
-        web_visible: bool = False,
+        web_visible: bool | None = None,
         timestamp: str | None = None,
     ) -> None:
         now = _timestamp(timestamp)
@@ -59,10 +59,19 @@ class Repository:
                 guild_id = excluded.guild_id,
                 name = excluded.name,
                 kind = excluded.kind,
-                web_visible = excluded.web_visible,
+                web_visible = COALESCE(?, channels.web_visible),
                 updated_at = excluded.updated_at
             """,
-            (channel_id, guild_id, name, kind, int(web_visible), now, now),
+            (
+                channel_id,
+                guild_id,
+                name,
+                kind,
+                int(web_visible) if web_visible is not None else 0,
+                now,
+                now,
+                None if web_visible is None else int(web_visible),
+            ),
         )
 
     async def upsert_author(
@@ -257,3 +266,39 @@ class Repository:
             (link_id, available_at, f"link:{link_id}:enrich"),
         )
         return cursor.rowcount == 1
+
+    async def get_channel_checkpoint(
+        self,
+        connection: aiosqlite.Connection,
+        channel_id: str,
+    ) -> str | None:
+        cursor = await connection.execute(
+            "SELECT last_message_id FROM channel_checkpoints WHERE channel_id = ?",
+            (channel_id,),
+        )
+        row = await cursor.fetchone()
+        return None if row is None else row["last_message_id"]
+
+    async def upsert_channel_checkpoint(
+        self,
+        connection: aiosqlite.Connection,
+        channel_id: str,
+        last_message_id: str | None,
+        updated_at: str,
+        backfill_state: str,
+    ) -> None:
+        await connection.execute(
+            """
+            INSERT INTO channel_checkpoints (
+                channel_id, last_message_id, updated_at, backfill_state
+            )
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(channel_id) DO UPDATE SET
+                last_message_id = COALESCE(
+                    excluded.last_message_id, channel_checkpoints.last_message_id
+                ),
+                updated_at = excluded.updated_at,
+                backfill_state = excluded.backfill_state
+            """,
+            (channel_id, last_message_id, updated_at, backfill_state),
+        )
