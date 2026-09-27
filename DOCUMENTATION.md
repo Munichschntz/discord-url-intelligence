@@ -44,7 +44,7 @@ Raw message edits update stored content and reconcile that message's URL occurre
 
 Before running it, configure `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, and `ALLOWED_SOURCE_CHANNEL_IDS` in the ignored local `.env`. In the Discord Developer Portal, enable Message Content Intent for the bot. Applications above Discord's privileged-intent review threshold must obtain approval. The bot needs only `View Channels` and `Read Message History` in the selected channels. Keep `WEB_VISIBLE_CHANNEL_IDS` separate; this collector does not publish message data to a website.
 
-The enrichment worker, web, and MCP run modes are not implemented yet.
+The web and MCP run modes are not implemented yet.
 
 ## Validation
 
@@ -59,6 +59,13 @@ uv run pytest -q
 - `uv: command not found`: install `uv` and ensure its executable directory is on `PATH`.
 - Settings validation fails: use decimal-string Discord IDs, make the web-visible IDs a subset of source IDs, configure the exact HTTPS `/auth/callback` URL, and keep web/MCP hosts on loopback.
 - Database initialization reports that FTS5 is unavailable: use a Python build whose bundled SQLite includes FTS5.
-- The application does not collect or serve data yet: those features are later milestones, not setup failures.
+- The application collects messages but does not serve a website yet; member web access arrives in Milestone 10A.
 
 Remote deployment instructions, OAuth operation, backups, and recovery will be added with the milestones that implement those features.
+## Enrichment worker (Milestone 6)
+
+`discord-intel run` now starts one durable worker alongside the collector. Run only one collector/worker process per database. Backfill remains a separate finite command. Stop with `Ctrl+C`; interrupted claims older than 15 minutes are recovered when the worker starts again.
+
+Provider adapters arrive in Milestones 7-8C. Until then, collected enrichment jobs remain pending without consuming attempts or making provider requests. Successful enrichment stores metadata and queues a deduplicated search rebuild; those rebuilds will be processed starting in Milestone 9.
+
+Transient failures retry after 30 seconds, 2 minutes, 10 minutes, 1 hour, and 6 hours, then fail after the sixth attempt. Permanent failures fail immediately. Provider calls have a five-minute timeout. Failures preserve archived messages, URL occurrences, links, and previously stored metadata. Job error fields show the exception type without potentially sensitive provider error text.

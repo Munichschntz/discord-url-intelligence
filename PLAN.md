@@ -10,8 +10,8 @@ Status is tracked here; detailed deliverables and acceptance criteria are in `di
 | 3 | URL extraction and canonicalization | Complete | `linkify-it-py`, `url-normalize` |
 | 4 | Live Discord ingestion | Complete | `discord.py` |
 | 5 | Backfill, edits, and deletions | Complete | Reuse `discord.py` |
-| 6 | Durable enrichment worker | Next | None planned |
-| 7 | GitHub metadata | Not started | `httpx` |
+| 6 | Durable enrichment worker | Complete | None |
+| 7 | GitHub metadata | Next | `httpx` |
 | 8A | Hugging Face models | Not started | `huggingface_hub` |
 | 8B | Hacker News | Not started | Reuse `httpx` |
 | 8C | Generic pages and SSRF protection | Not started | `httpx`, `trafilatura` |

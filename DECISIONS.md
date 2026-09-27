@@ -40,3 +40,9 @@ None recorded. Recheck the official contract at the milestone where each integra
 - Use raw edit/delete events so cache eviction does not lose lifecycle changes. Use raw edit content when present and fetch the current Discord message only when the payload/cache cannot provide it.
 - Reconcile a message's URL occurrence rows atomically on edit. Soft-delete messages without deleting their occurrences or global link rows.
 - No schema migration is needed because the initial schema already contains `channel_checkpoints` and the message deletion marker.
+## 2026-09-27: Durable worker boundary
+
+- Reuse the existing jobs schema and partial unique indexes. Atomic claims and attempt fencing support restart recovery without introducing queue infrastructure.
+- Use a first-match provider registry selected by canonical URL and resource type. Leave unsupported jobs pending until a concrete adapter is implemented; do not misreport no-op enrichment as success.
+- Retry adapter errors on the five planned delays, failing after six total attempts; explicitly permanent failures are terminal immediately. Bound adapter calls to five minutes and recover claims older than fifteen minutes at startup.
+- Persist provider metadata and enqueue search rebuild work atomically. Search execution remains Milestone 9. No external API was integrated in Milestone 6, so no new official API contract applies.

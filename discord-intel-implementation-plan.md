@@ -12,7 +12,8 @@
 - [x] Milestone 3 — URL extraction and canonicalization complete.
 - [x] Milestone 4 — live Discord ingestion complete.
 - [x] Milestone 5 — backfill, edits, and deletions complete.
-- [ ] Milestone 6 — next: durable enrichment worker.
+- [x] Milestone 6 — durable enrichment worker complete.
+- [ ] Milestone 7 — next: GitHub metadata.
 
 > **For the coding assistant:** This is a build specification, not a request to implement every milestone in one pass. Start at the first incomplete milestone in `PLAN.md`, finish and validate it, update the project documents, and stop. Verify the current official documentation before writing any integration code. This document is self-contained; do not assume access to the conversation that produced it.
 

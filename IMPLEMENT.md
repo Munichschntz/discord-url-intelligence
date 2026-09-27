@@ -22,7 +22,7 @@ No Discord client, database connection, HTTP provider, worker, or web server is 
 
 `ingest/service.py` accepts plain message data, independently enforces the same allowlist, extracts/canonicalizes URLs, and transactionally upserts guild, channel, author, message, link occurrences, and pending enrichment jobs. No Discord types or network provider calls enter the shared service.
 
-`discord-intel run` initializes the configured database before connecting the bot. Live collection, backfill, and message lifecycle handling are implemented; the enrichment worker remains a later milestone.
+`discord-intel run` initializes the configured database before connecting the bot. Live collection, backfill, and message lifecycle handling are implemented; the enrichment worker is implemented in Milestone 6 below.
 
 ## Backfill and message lifecycle (Milestone 5)
 
@@ -54,3 +54,10 @@ uv run ruff check .
 uv run mypy src
 uv run pytest -q
 ```
+## Durable enrichment worker (Milestone 6)
+
+`jobs/worker.py` runs one worker alongside live collection. Claims use `BEGIN IMMEDIATE`, increment attempts, and commit before invoking an adapter. A five-minute adapter timeout bounds normal execution. Startup returns running jobs older than 15 minutes to pending; attempt fencing prevents an old claim from overwriting a reclaimed job.
+
+`providers/` defines a URL/resource-type selection protocol and structured metadata result. No network adapters are registered until their respective milestones. Unsupported links remain pending without spending attempts. Successful metadata persistence, link state, job completion, and deduplicated `search_rebuild` enqueue commit together. Search rebuild jobs remain pending until Milestone 9.
+
+Transient and unexpected adapter errors retry after 30 seconds, 2 minutes, 10 minutes, 1 hour, and 6 hours; the sixth failed attempt is terminal. Permanent failures stop immediately. Error records retain exception class names only, avoiding provider exception text that could contain secrets. Cancellation leaves the claim recoverable. The existing schema suffices; no migration was changed or added.
