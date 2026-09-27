@@ -231,3 +231,29 @@ class Repository:
         if row is None:
             raise RuntimeError("Occurrence upsert did not produce a row")
         return int(row["occurrence_id"])
+
+    async def enqueue_enrichment_job(
+        self,
+        connection: aiosqlite.Connection,
+        link_id: int,
+        available_at: str,
+    ) -> bool:
+        """Queue enrichment for a link that has not succeeded or previously failed."""
+        cursor = await connection.execute(
+            "SELECT enrichment_state FROM links WHERE link_id = ?", (link_id,)
+        )
+        row = await cursor.fetchone()
+        if row is None:
+            raise ValueError(f"Unknown link ID: {link_id}")
+        if row["enrichment_state"] not in {"pending", "failed"}:
+            return False
+
+        cursor = await connection.execute(
+            """
+            INSERT INTO jobs (link_id, kind, status, available_at, dedupe_key)
+            VALUES (?, 'enrich', 'pending', ?, ?)
+            ON CONFLICT DO NOTHING
+            """,
+            (link_id, available_at, f"link:{link_id}:enrich"),
+        )
+        return cursor.rowcount == 1

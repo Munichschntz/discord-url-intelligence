@@ -8,8 +8,8 @@ Status is tracked here; detailed deliverables and acceptance criteria are in `di
 | 1 | Scaffold and freeze specification | Complete | `pydantic-settings`, `python-dotenv`; dev: `ruff`, `mypy`, `pytest` |
 | 2 | SQLite and append-only migrations | Complete | `aiosqlite`; dev: `pytest-asyncio` |
 | 3 | URL extraction and canonicalization | Complete | `linkify-it-py`, `url-normalize` |
-| 4 | Live Discord ingestion | Next | `discord.py` |
-| 5 | Backfill, edits, and deletions | Not started | Reuse `discord.py` |
+| 4 | Live Discord ingestion | Complete | `discord.py` |
+| 5 | Backfill, edits, and deletions | Next | Reuse `discord.py` |
 | 6 | Durable enrichment worker | Not started | None planned |
 | 7 | GitHub metadata | Not started | `httpx` |
 | 8A | Hugging Face models | Not started | `huggingface_hub` |

@@ -16,6 +16,14 @@ No Discord client, database connection, HTTP provider, worker, or web server is 
 
 `urls/extract.py` uses `linkify-it-py` to return each explicit HTTP(S) match with its original text and half-open source offsets. `urls/canonical.py` uses `url-normalize` for scheme/authority normalization and keeps raw path/query semantics, applying only known tracking removal and provider-specific identity rules. It does not perform network access or persist data.
 
+## Live collection boundary (Milestone 4)
+
+`discord/collector.py` uses `discord.Client` with guild, guild-message, and message-content intents. It ignores the collector's own user ID and filters the single configured guild and source channels before calling `IngestionService`.
+
+`ingest/service.py` accepts plain message data, independently enforces the same allowlist, extracts/canonicalizes URLs, and transactionally upserts guild, channel, author, message, link occurrences, and pending enrichment jobs. No Discord types or network provider calls enter the shared service.
+
+`discord-intel run` initializes the configured database before connecting the bot. Live ingestion is implemented; backfill, edits, deletes, and the enrichment worker remain later milestones.
+
 ## Intended boundaries
 
 - `config.py`: validated, shared process configuration.

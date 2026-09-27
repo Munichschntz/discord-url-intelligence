@@ -6,8 +6,17 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from discord_intel.config import load_settings
+from discord_intel.config import Settings, load_settings
 from discord_intel.db import Database
+from discord_intel.discord import DiscordCollector
+from discord_intel.ingest import IngestionService
+
+
+async def _run_collector(settings: Settings) -> None:
+    database = Database(settings.database_path)
+    await database.initialize()
+    collector = DiscordCollector(settings, IngestionService(database, settings))
+    await collector.run_bot()
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -15,8 +24,8 @@ def build_parser() -> argparse.ArgumentParser:
         prog="discord-intel",
         description="Index and search links shared in configured Discord channels.",
     )
-    database_parser = parser.add_subparsers(dest="command")
-    database_command = database_parser.add_parser("db", help="Database commands")
+    commands = parser.add_subparsers(dest="command")
+    database_command = commands.add_parser("db", help="Database commands")
     database_actions = database_command.add_subparsers(dest="db_action", required=True)
     initialize_parser = database_actions.add_parser("init", help="Apply pending SQL migrations")
     initialize_parser.add_argument(
@@ -24,6 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Database file path (defaults to DATABASE_PATH)",
     )
+    commands.add_parser("run", help="Start the allowlisted Discord collector")
     return parser
 
 
@@ -38,6 +48,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         database_path = parsed.database or load_settings().database_path
         asyncio.run(Database(database_path).initialize())
         print(f"Database initialized: {database_path}")
+        return 0
+    if parsed.command == "run":
+        settings = load_settings()
+        if settings.discord_bot_token is None:
+            parser.error("DISCORD_BOT_TOKEN is required for `discord-intel run`")
+        if settings.discord_guild_id is None:
+            parser.error("DISCORD_GUILD_ID is required for `discord-intel run`")
+        if not settings.allowed_source_channel_ids:
+            parser.error("ALLOWED_SOURCE_CHANNEL_IDS must include at least one channel")
+        asyncio.run(_run_collector(settings))
         return 0
     parser.print_help()
     return 0

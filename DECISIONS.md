@@ -26,3 +26,10 @@ None recorded. Recheck the official contract at the milestone where each integra
 - Use `linkify-it-py` for HTTP(S) message URL matching and source offsets, and `url-normalize` for scheme, host, IDNA, and default authority normalization.
 - Do not apply the normalizer to path/query data: its documented defaults normalize dot segments and percent-encoded values. Keep the raw path/query and apply only the repository's explicit root/provider and known-tracking rules.
 - Retain small domain-specific rules for `www` aliases, GitHub repository identity, Hugging Face resource type, Hacker News item URLs, and tracking parameters; these are not generic URL parsing replacements.
+
+## 2026-09-27: Discord Gateway collection
+
+- Use `discord.py` 2.7.1 `discord.Client` with only guild, guild-message, and message-content intents for live ingestion.
+- Keep the shared message ingestion service independent from Discord event objects. Gateway callbacks only apply allowlists, parse URLs, and persist message/occurrence/job rows transactionally; providers remain background work.
+- Compare exact decimal string IDs for configured guild/channel allowlists and ignore only this bot's own user ID.
+- No discrepancy from the current Discord Gateway or discord.py documentation was found.

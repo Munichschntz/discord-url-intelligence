@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiosqlite>=0.20,<1",
+    "discord-py>=2.4,<3",
     "linkify-it-py>=2,<3",
     "pydantic-settings>=2.6,<3",
     "python-dotenv>=1.0,<2",
