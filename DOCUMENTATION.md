@@ -2,16 +2,16 @@
 
 ## Current state
 
-The repository collects Discord URLs and categorizes them using configurable keyword rules, with support for history imports, edits, and deletions. No AI models are used. The remaining MVP work is a small website where server friends can sign in, browse topics, and search links. The website is not implemented yet. Provider enrichment, MCP, AI features, and project tracking are outside scope.
+The repository collects Discord URLs and categorizes them using configurable keyword rules, with support for history imports, edits, and deletions. No AI models are used. The member website now supports Discord sign-in, topic filters, keyword search, and original-message links. Offline verification is complete; live Discord/HTTPS verification is pending. Follow [the website launch guide](docs/WEB_SETUP.md). Provider enrichment, MCP, AI features, and project tracking are outside scope.
 
 ## Prerequisites
 
 - Windows PowerShell and `uv` 0.12.7 or newer on `PATH`.
 - No system Python installation is required. Setup installs the pinned standalone runtime locally.
-- For eventual collection: a Discord application/bot installed only in the intended guild, Message Content Intent enabled, and explicit source channel IDs.
-- For eventual member web access: an HTTPS hostname/tunnel, a registered exact OAuth callback URI, and a separately designated web-visible channel list.
+- For collection: a Discord application/bot installed only in the intended guild, Message Content Intent enabled, and explicit source channel IDs.
+- For member web access: an HTTPS hostname/tunnel, a registered exact OAuth callback URI, and a separately designated web-visible channel list.
 
-Follow the [Discord setup guide](README.md#discord-setup-milestone-0) before configuring application credentials. Never use a user token. Leave `WEB_VISIBLE_CHANNEL_IDS` empty until the server owner has confirmed public-to-members visibility.
+Follow the [Discord setup guide](docs/WEB_SETUP.md) before configuring application credentials. Never use a user token. Leave `WEB_VISIBLE_CHANNEL_IDS` empty until the server owner has confirmed public-to-members visibility.
 
 ## Local configuration
 
@@ -22,7 +22,7 @@ ALLOWED_SOURCE_CHANNEL_IDS=["123456789012345678"]
 WEB_VISIBLE_CHANNEL_IDS=[]
 ```
 
-Important settings include the bot token, guild ID, source and web-visible channel lists, OAuth client ID/secret/callback, web session secret, database path, optional GitHub/Hugging Face tokens, and loopback web/MCP host and ports. Settings are validated by `discord_intel.config.Settings`; invalid IDs, non-allowlisted visible channels, unsafe OAuth callbacks, and non-loopback bind hosts are rejected. Public provider content does not require GitHub or Hugging Face tokens.
+Important settings include the bot token, guild ID, source and web-visible channel lists, OAuth client ID/secret/callback, web session secret, database path, and loopback web host/port. Settings are validated by `discord_intel.config.Settings`; invalid IDs, non-allowlisted visible channels, unsafe OAuth callbacks, and non-loopback bind hosts are rejected. Provider tokens and model services are not needed.
 
 ## Install and commands
 
@@ -65,15 +65,36 @@ If script execution is blocked, use a process-only invocation such as
 
 `discord-intel db init` creates the configured database parent directory, enables SQLite WAL/foreign-key settings, and applies pending append-only migrations. Override the configured database path with `--database PATH`. Repeating the command is safe; applied migration checksums are verified and modified/deleted migration files are rejected. Local database files are ignored by Git.
 
-`discord-intel run` initializes the database, connects the authorized bot to Discord, and archives every message from the configured guild and source-channel allowlist. Valid HTTP(S) URLs become occurrence rows and pending enrichment jobs; no provider requests run in Gateway callbacks. Stop the collector with `Ctrl+C`.
+`discord-intel run` initializes the database, connects the authorized bot to Discord, and archives every message from the configured guild and source-channel allowlist. Valid HTTP(S) URLs become occurrence rows. No enrichment jobs are created and no worker is started. Stop the collector with `Ctrl+C`.
 
 `discord-intel backfill --channel-id ID` imports one allowlisted channel oldest-first. It uses the same ingestion service as live collection and commits each message together with its channel checkpoint. Re-running resumes after the last committed message. The bot needs `View Channel` and `Read Message History` in that channel.
 
 Raw message edits update stored content and reconcile that message's URL occurrences; raw deletes set `deleted_at` while preserving links and occurrence history. No message history is fetched outside the configured guild/channel allowlist.
 
-Before running it, configure `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, and `ALLOWED_SOURCE_CHANNEL_IDS` in the ignored local `.env`. In the Discord Developer Portal, enable Message Content Intent for the bot. Applications above Discord's privileged-intent review threshold must obtain approval. The bot needs only `View Channels` and `Read Message History` in the selected channels. Keep `WEB_VISIBLE_CHANNEL_IDS` separate; this collector does not publish message data to a website.
+Before running it, configure `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, and `ALLOWED_SOURCE_CHANNEL_IDS` in the ignored local `.env`. In the Discord Developer Portal, enable Message Content Intent for the bot. Applications above Discord's privileged-intent review threshold must obtain approval. The bot needs only `View Channels` and `Read Message History` in the selected channels. Keep `WEB_VISIBLE_CHANNEL_IDS` separate; only explicitly approved public-to-members channels can appear on the website.
 
-The web and MCP run modes are not implemented yet.
+`discord-intel web` starts the server-rendered member website on loopback port 4710.
+Run it separately from the collector, using `.\run.ps1 web`. Both share SQLite. Configure
+OAuth and HTTPS before launching; see [WEB_SETUP.md](docs/WEB_SETUP.md). No MCP mode is needed.
+
+The website shows 20 links per page with URL, topics, public source/excerpt, and original
+Discord message links. Detail pages show up to three latest public mentions. Search uses
+case-insensitive literal terms against URLs and current visible message text; all terms
+must match. Queries are limited to 200 characters and 20 terms. Topic counts reflect the
+search across all topics before the selected-topic filter and pagination.
+
+A session lasts eight hours. Guild membership is checked at sign-in and at least every
+five minutes; expired checks fail closed when Discord is unavailable. Channel visibility
+is checked before every member data request, including details. Only ordinary text and
+announcement channels readable by @everyone, without restrictive role/member overrides,
+are supported; parent categories must also be public. Private mentions cannot influence
+results, snippets, categories, counts, or ordering. Posted URLs are never fetched.
+
+OAuth state is single-use, expires after five minutes, and is bound to a browser cookie.
+Sessions are opaque, hashed at rest, and use Secure/HttpOnly/SameSite cookies. Sign-out
+requires a same-origin form token. HTML is escaped and served without caching, external
+scripts, or external images. Local rate limits bound repeated web/sign-in requests. Run
+one website process; these limits are process-local. Callback access logs are disabled.
 
 ## Topic categories (Milestone 6A)
 
@@ -105,8 +126,9 @@ This is an owner-local preview, not the friends' website. By default it uses all
 allowlisted source channels in the configured guild. `--member-view` includes only channels
 also in `WEB_VISIBLE_CHANNEL_IDS` **and** explicitly marked `web_visible` in the database.
 It returns no links by default. It does not grant visibility or perform Discord sign-in;
-the future website will validate channel visibility and authenticate members before using
-the member query service. Do not share owner output as a member-safe export.
+the website validates current channel visibility and authenticates members before using
+the member query service. This local preview uses the last saved visibility flags and is
+not a live authorization check. Do not share owner output as a member-safe export.
 
 To customize categories, copy `topics.example.toml` to `topics.toml`, edit its `[topics]`
 table, and add this local setting:
@@ -132,10 +154,14 @@ after editing its rule file.
 
 Existing links need no migration, reimport, or categorization job. Categories are calculated
 on read from live messages, so edits, deleted mentions, and changes to channel visibility
-take effect on the next query. No dependencies or external services were added. This MVP
-preview scans the scoped archive; it is not yet a full-text search endpoint.
+take effect on the next query. Topic classification adds no external services. The website uses this same scoped
+archive scan for simple keyword search; an extra search index is not required.
 
 ## Validation
+
+Milestone 10A: Ruff and mypy passed, with 125 offline tests passing. The built wheel
+contains the website templates, CSS, and migrations. Sample pages were visually checked
+on desktop and a 390px phone layout. The controlled Discord/HTTPS check remains pending.
 
 ```sh
 uv run ruff check .
@@ -148,13 +174,10 @@ uv run pytest -q
 - `uv: command not found`: install `uv` and ensure its executable directory is on `PATH`.
 - Settings validation fails: use decimal-string Discord IDs, make the web-visible IDs a subset of source IDs, configure the exact HTTPS `/auth/callback` URL, and keep web/MCP hosts on loopback.
 - Database initialization reports that FTS5 is unavailable: use a Python build whose bundled SQLite includes FTS5.
-- The application collects messages but does not serve a website yet; member web access arrives in Milestone 10A.
+- For website, sign-in, visibility, backup, and HTTPS troubleshooting, see [WEB_SETUP.md](docs/WEB_SETUP.md).
 
-Remote deployment instructions, OAuth operation, backups, and recovery will be added with the milestones that implement those features.
-## Enrichment worker (Milestone 6)
+## Historical worker code
 
-`discord-intel run` now starts one durable worker alongside the collector. Run only one collector/worker process per database. Backfill remains a separate finite command. Stop with `Ctrl+C`; interrupted claims older than 15 minutes are recovered when the worker starts again.
-
-Provider adapters arrive in Milestones 7-8C. Until then, collected enrichment jobs remain pending without consuming attempts or making provider requests. Successful enrichment stores metadata and queues a deduplicated search rebuild; those rebuilds will be processed starting in Milestone 9.
-
-Transient failures retry after 30 seconds, 2 minutes, 10 minutes, 1 hour, and 6 hours, then fail after the sixth attempt. Permanent failures fail immediately. Provider calls have a five-minute timeout. Failures preserve archived messages, URL occurrences, links, and previously stored metadata. Job error fields show the exception type without potentially sensitive provider error text.
+The earlier queue/worker modules and schema remain for compatibility with existing local
+data, but the normal collector no longer starts a worker or enqueues enrichment. Previously
+queued jobs stay untouched. Provider adapters, AI, and MCP are outside the MVP.

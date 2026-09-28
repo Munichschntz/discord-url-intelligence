@@ -61,3 +61,41 @@ This scaffold contains no external API integration. These official references ar
 - Use SQLite transactions for migration application and repository write batches. Roll back on any exception so schema changes and migration ledger rows are atomic.
 - FTS5 external-content tables refer to a content table and its rowid; the application must keep the index synchronized with insert/update/delete triggers. Delete synchronization uses the FTS5 delete command with the old indexed values.
 - The development runtime was checked locally with SQLite 3.45.1; creating an FTS5 table, inserting a row, and querying it with `MATCH` succeeded. FTS5 is a SQLite compile-time capability; fail initialization clearly if unavailable.
+
+## Member website contract (Milestone 10A, checked 2026-09-27)
+
+- Discord OAuth authorization uses `https://discord.com/oauth2/authorize` with
+  `response_type=code`, scope `identify`, exact configured HTTPS callback, and random state.
+  Exchange at `POST https://discord.com/api/v10/oauth2/token` using form encoding and client
+  credentials; call `GET /api/v10/users/@me` with the returned Bearer token. Do not store
+  access/refresh tokens. Official: https://docs.discord.com/developers/topics/oauth2 and
+  https://docs.discord.com/developers/resources/user#get-current-user .
+- `GET /api/v10/guilds/{guild_id}/members/{user_id}` uses bot authorization to check the
+  identified user. A successful member object must identify that exact user; 404 denies
+  access. Other errors fail closed when the five-minute membership cache expires. This
+  single-member endpoint is distinct from List Guild Members and does not document that
+  endpoint's privileged member-list intent requirement. Official:
+  https://docs.discord.com/developers/resources/guild#get-guild-member .
+- Before each member data response, bot-authenticated `GET /guilds/{guild_id}/roles` and
+  `GET /guilds/{guild_id}/channels` provide the @everyone role permissions and channel
+  overwrites. Public-to-members means @everyone has VIEW_CHANNEL (1<<10) and
+  READ_MESSAGE_HISTORY (1<<16), after its overwrite, and no role/member overwrite denies
+  either bit. Apply the same conservative check to a parent category. Only ordinary text
+  and announcement channels (types 0 and 5) are supported; threads/forums or uncertain
+  permissions are excluded. This intentionally rejects ambiguous configurations instead
+  of evaluating each viewer's private-channel roles. Official:
+  https://docs.discord.com/developers/resources/guild#get-guild-channels and
+  https://docs.discord.com/developers/topics/permissions .
+- REST errors and 429 responses never grant access. Retry-After establishes a bounded
+  process-local cooldown; requests do not spin or retry in callbacks. All destinations
+  are fixed Discord endpoints; shared URLs are never fetched.
+- FastAPI/Jinja templates autoescape HTML; use local static CSS and server-rendered forms.
+  Official template usage: https://fastapi.tiangolo.com/advanced/templates/ .
+  Uvicorn listens only on loopback, trusts forwarded headers only from loopback, and has
+  access logging disabled so callback query strings cannot log authorization codes.
+- Tested locked versions: FastAPI 0.141.1, Starlette 1.7.0, Jinja2 3.1.6, HTTPX 0.28.1,
+  and Uvicorn 0.54.0. Uvicorn settings: https://uvicorn.dev/settings/ .
+- Optional trial HTTPS: `cloudflared tunnel --url http://127.0.0.1:4710` generates a random
+  public hostname forwarding to the local web port. Quick Tunnels are for development and
+  testing, with no uptime guarantee; use a stable tunnel for ongoing friend access.
+  Official: https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/trycloudflare/ .

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="library">
+  <section class="heading">
+    <p class="eyebrow">Your shared library</p>
+    <h1>Worth coming back to.</h1>
+    <p>All the links. Across your channels. Easy to find.</p>
+  </section>
+  <form class="search" method="get" action="/links" role="search">
+    <label class="sr-only" for="query">Search links and messages</label>
+    <span class="search-icon" aria-hidden="true">⌕</span>
+    <input id="query" name="q" type="search" maxlength="200" value="{{ q }}"
+           placeholder="Search a tool, topic, or something someone said…">
+    <input type="hidden" name="category" value="{{ category }}">
+    <button class="primary" type="submit">Search</button>
+  </form>
+  <div class="browse">
+    <aside>
+      <h2 class="eyebrow">Browse topics</h2>
+      <nav class="topics" aria-label="Topic filters">
+        <a class="topic {% if not category %}active{% endif %}" href="/links?q={{ q|urlencode }}"
+           {% if not category %}aria-current="page"{% endif %}>All links <span>↗</span></a>
+        {% for topic in categories %}
+        <a class="topic {% if category == topic %}active{% endif %}"
+           href="/links?category={{ topic|urlencode }}&amp;q={{ q|urlencode }}"
+           {% if category == topic %}aria-current="page"{% endif %}>
+          {{ topic }} <span>{{ page.counts[topic] }}</span></a>
+        {% endfor %}
+      </nav>
+      <p class="aside-note">One link can belong to more than one topic.</p>
+    </aside>
+    <section class="results" aria-label="Shared links">
+      <div class="results-heading"><h2>{{ category or 'All links' }}</h2>
+        <span>{{ page.total }} link{% if page.total != 1 %}s{% endif %} · Latest first</span></div>
+      {% if q %}<p class="search-summary">Results for “{{ q }}” <a href="/links?category={{ category|urlencode }}">Clear search</a></p>{% endif %}
+      {% for link in page.links %}
+        <article class="link-card">
+          <div class="tags">{% for topic in link.categories %}<span>{{ topic }}</span>{% endfor %}</div>
+          <h3><a href="/links/{{ link.link_id }}">{{ link.url }}</a></h3>
+          {% if link.mentions %}<p class="excerpt">{{ link.mentions[0].excerpt }}</p>{% endif %}
+          <div class="card-bottom">
+            {% if link.mentions %}<span class="source">#{{ link.mentions[0].channel }} · {{ link.mentions[0].author }}</span>{% endif %}
+            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">Open link ↗</a>
+          </div>
+          <div class="card-meta"><time datetime="{{ link.last_shared_at }}">{{ link.last_shared_at[:10] }}</time>
+            · {{ link.message_count }} mention{% if link.message_count != 1 %}s{% endif %}
+            {% if link.mentions %} · <a href="{{ link.mentions[0].discord_url }}" target="_blank" rel="noopener noreferrer">View in Discord ↗</a>{% endif %}</div>
+        </article>
+      {% else %}
+        <div class="empty"><span aria-hidden="true">↗</span>
+          <h3>{% if q or category %}No matching links yet.{% else %}Your library starts here.{% endif %}</h3>
+          <p>{% if q or category %}Try another topic or a shorter search.{% else %}Links from approved channels will appear here as they’re collected.{% endif %}</p>
+          {% if q or category %}<a href="/links">Browse all links</a>{% endif %}
+        </div>
+      {% endfor %}
+      <nav class="pagination" aria-label="Result pages">
+        {% if previous %}<a href="{{ previous }}">← Previous</a>{% endif %}
+        {% if following %}<a href="{{ following }}">Next →</a>{% endif %}
+      </nav>
+    </section>
+  </div>
+</main>
+{% endblock %}

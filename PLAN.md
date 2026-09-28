@@ -12,7 +12,15 @@ friends browse and search them on one small website. No AI models or training ar
 | Collection | Bot, URL extraction, deduplication, backfill, edits/deletes, SQLite | Complete |
 | Classification | Configurable keyword/URL rules, overlapping topics, Uncategorized | Complete |
 | Local runtime | Private Python and isolated venv | Complete |
-| Member web app (10A, including basic search) | Discord sign-in, topic filters, keyword search, recent links, original-message links, HTTPS setup | Next |
+| Member web app (10A, including basic search) | Discord sign-in, topic filters, keyword search, recent links, original-message links, HTTPS setup | Implemented; controlled-guild live check pending |
+
+The website implementation and offline verification are ready. Follow `docs/WEB_SETUP.md`
+to configure local credentials and HTTPS, then complete its controlled-guild checklist.
+No `.env` or public hostname was available during implementation, so live Discord sign-in
+has not been claimed as verified. Do not start another milestone before that check.
+
+Validation (2026-09-27): Ruff and mypy passed; 125 offline tests passed. Wheel build and
+packaged templates/CSS/migrations verified. Desktop and 390px phone sample layouts inspected.
 
 Implement only the first incomplete milestone and stop at its boundary. There is no
 separate search-platform milestone before the website. Start with the existing scoped

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="welcome">
+  <p class="eyebrow">Less scrolling. More finding.</p>
+  <h1>The good stuff,<br>all in one place.</h1>
+  <p class="intro">The links your friends share, organized by topic.<br>
+    Find that tool, tutorial, or idea without searching every channel.</p>
+  <a class="primary" href="/auth/login">Continue with Discord <span aria-hidden="true">↗</span></a>
+  <p class="fine">Only members of this Discord server can browse its shared links.</p>
+  <div class="welcome-topics" aria-hidden="true">
+    <span>Coding</span><span>Image Generation</span><span>Models</span><span>Tutorials</span><span>Tools</span>
+  </div>
+</main>
+{% endblock %}

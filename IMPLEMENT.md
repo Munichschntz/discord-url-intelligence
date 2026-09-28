@@ -2,12 +2,35 @@
 
 ## Current direction
 
-The active MVP path is Discord collector -> SQLite -> keyword topic rules -> member web
-page. Build the website next, with a search box and topic filters using the existing scoped
-data service. No separate search platform, model, provider integration, or worker is needed
-for that flow. Earlier milestone notes below describe what exists; they are not a list of
-features still required. Remove the idle worker from normal launch as part of wiring up
-the website; preserve existing database rows and immutable migrations.
+The implemented MVP path is Discord collector -> SQLite -> keyword topic rules -> member
+website. `web` starts a separate loopback FastAPI/Uvicorn process, using server-rendered
+Jinja templates and local CSS. The collector no longer starts an idle worker or enqueues
+unused enrichment jobs. Existing rows and migration 001 are preserved. Earlier milestone
+notes below are historical, not additional required features.
+
+## Member website boundary (Milestone 10A)
+
+`web/auth.py` stores HMAC-SHA256 digests of random session tokens and OAuth states in new
+migration 002. Browser-bound login states expire in five minutes and are consumed atomically;
+sessions last eight hours. `web/discord_api.py` uses fixed Discord REST destinations for
+OAuth identify, exact-user guild membership, roles, and channels. No linked URL is fetched.
+Membership is refreshed at least every five minutes; channel permissions before each data
+request. Unknown/private/role-restricted channels, unsupported channel types, and errors
+are excluded or fail closed. Do not expand the model to role-specific member views.
+
+`web/app.py` authenticates before `TopicService.member_links/member_link`, passing the
+freshly verified channel set as an additional SQL scope guard. Category/search/count/order
+calculations use only those scoped current messages. Search is bounded literal text;
+results paginate at 20 and details contain at most three public excerpts. No new FTS
+pipeline, scraping, client JavaScript, worker service, or model dependency is involved.
+
+Uvicorn accepts proxy headers only from loopback; the app enforces its configured HTTPS
+origin. Opaque secure cookies, same-origin CSRF-checked logout, escaped templates, CSP,
+no-store responses, disabled callback access logs, and bounded local rate limits protect
+the member surface. One web process is the supported MVP deployment.
+
+See `docs/WEB_SETUP.md` for configuration and controlled-guild acceptance. Offline tests
+and responsive sample-page inspection are complete; live Discord setup remains pending.
 
 ## Scaffold decisions (Milestone 1)
 

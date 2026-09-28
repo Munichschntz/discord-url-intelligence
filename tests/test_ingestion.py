@@ -47,7 +47,7 @@ async def test_shared_ingestion_archives_messages_and_deduplicates_link_jobs(
 
     assert first_result.occurrence_count == 2
     assert first_result.accepted
-    assert first_result.enrichment_jobs_enqueued == 1
+    assert first_result.enrichment_jobs_enqueued == 0
     assert replay_result.occurrence_count == 2
     assert replay_result.enrichment_jobs_enqueued == 0
     assert second_result.occurrence_count == 1
@@ -82,7 +82,7 @@ async def test_shared_ingestion_archives_messages_and_deduplicates_link_jobs(
                 "(SELECT count(*) FROM jobs)"
             )
         ).fetchone()
-        assert tuple(counts) == (1, 3, 3, 1)
+        assert tuple(counts) == (1, 3, 3, 0)
         archived = await (
             await connection.execute(
                 "SELECT has_links FROM messages WHERE message_id = '402'"

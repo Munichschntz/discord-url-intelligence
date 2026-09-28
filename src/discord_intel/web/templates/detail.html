@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Shared link · Discord Links{% endblock %}
+{% block content %}
+<main class="detail">
+  <a class="back" href="/links">← Back to the library</a>
+  <p class="eyebrow">From your server</p>
+  <div class="tags">{% for topic in link.categories %}<span>{{ topic }}</span>{% endfor %}</div>
+  <h1>{{ link.url }}</h1>
+  <a class="primary" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">Open link ↗</a>
+  <section class="mentions">
+    <h2>Shared {{ link.message_count }} time{% if link.message_count != 1 %}s{% endif %}</h2>
+    <p class="muted">Up to three recent mentions from shared channels.</p>
+    {% for mention in link.mentions %}
+      <article class="link-card">
+        <p class="source">#{{ mention.channel }} · {{ mention.author }} · {{ mention.shared_at[:10] }}</p>
+        <p class="excerpt">{{ mention.excerpt }}</p>
+        <a href="{{ mention.discord_url }}" target="_blank" rel="noopener noreferrer">View original message ↗</a>
+      </article>
+    {% endfor %}
+  </section>
+</main>
+{% endblock %}

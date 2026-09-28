@@ -46,5 +46,5 @@ def test_db_init_cli_is_idempotent(tmp_path: Path, capsys: pytest.CaptureFixture
 
     with sqlite3.connect(database_path) as connection:
         applied = connection.execute("SELECT count(*) FROM schema_migrations").fetchone()
-    assert applied == (1,)
+    assert applied == (2,)
     assert "Database initialized" in capsys.readouterr().out

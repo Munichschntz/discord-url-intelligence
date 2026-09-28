@@ -1,6 +1,8 @@
 # Discord Intel
 
-Discord Intel archives messages and links from selected channels in one Discord server. The current CLI initializes the local database, collects live messages, and backfills channel history.
+Discord Intel collects URLs from selected channels in one Discord server and gives friends a searchable website with topic filters. Categories use simple keyword rules. No AI models or background enrichment services are required.
+
+The website is implemented and tested offline. Follow the [website launch guide](docs/WEB_SETUP.md) to connect Discord sign-in and HTTPS; the first live server check is still pending.
 
 ## Requirements
 
@@ -22,7 +24,7 @@ DISCORD_GUILD_ID=123456789012345678
 ALLOWED_SOURCE_CHANNEL_IDS=["234567890123456789"]
 ```
 
-Get the guild and channel IDs using Discord Developer Mode. The source-channel list is the ingestion allowlist. Keep `.env` private and untracked; never put real credentials in source files or commits. The OAuth, provider-token, and web settings in `.env.example` are not required by the current CLI. `WEB_VISIBLE_CHANNEL_IDS` is not used by a website yet and should remain empty unless explicitly configured for future use.
+Get the guild and channel IDs using Discord Developer Mode. The source-channel list is the ingestion allowlist. Keep `.env` private and untracked. Collection needs only the settings above. For the website, also configure OAuth, a random session secret, and an explicit `WEB_VISIBLE_CHANNEL_IDS` list using the launch guide. Leave that list empty until the owner approves channels readable by every server member.
 
 ## Install and Run
 
@@ -45,7 +47,18 @@ No permanent execution-policy change is needed. First setup requires internet ac
 
 `db init` applies local SQLite migrations. The default database path is `data/discord-intel.sqlite3`; override it with `DATABASE_PATH` in `.env` or `--database PATH` for `db init`.
 
-`run` archives every message from the configured guild and allowed channels, including messages without URLs. It ignores the bot's own messages, records each valid HTTP(S) URL appearance, and queues pending enrichment work. Provider enrichment and the website are not implemented yet, so queued jobs are not processed. Stop live collection with `Ctrl+C`.
+`run` archives every message from the configured guild and allowed channels, including messages without URLs. It ignores the bot's own messages and records each valid HTTP(S) URL appearance. It does not start a worker or queue enrichment jobs. Stop live collection with `Ctrl+C`.
+
+After completing website configuration, start it in a second PowerShell window:
+
+```powershell
+.\run.ps1 web
+```
+
+Open its configured HTTPS address. Friends sign in with Discord, search URLs/message text,
+filter by topic, and jump back to the original Discord message. The app checks membership
+and channel visibility; private mentions never contribute to results. Keep both processes
+and the HTTPS tunnel running. The website never fetches shared URLs.
 
 ## Backfill and Message Changes
 

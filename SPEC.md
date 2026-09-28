@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-Discord Intel extracts URLs from approved channels in one Discord server, classifies them with simple topic rules, and makes them browsable/searchable on a small website for server friends. Collection and classification already work; the member website is the remaining MVP milestone. No AI models, training, provider enrichment, MCP, or project tracking are planned.
+Discord Intel extracts URLs from approved channels in one Discord server, classifies them with simple topic rules, and makes them browsable/searchable on a small website for server friends. Collection, classification, and the member website are implemented; live website verification awaits local Discord/HTTPS configuration. No AI models, training, provider enrichment, MCP, or project tracking are planned.
 
 The current PLAN.md supersedes the original broad roadmap. Start with simple text matching
 and the existing scoped category service for website search; a separate FTS implementation
@@ -60,6 +60,7 @@ Migrations are ordered SQL files tracked by filename and checksum. Applied migra
 | `search_documents`, `search_fts` | Internal link-centric documents/index, rebuilt from current metadata and non-deleted mentions. |
 | `web_search_documents`, `web_search_fts` | Separate member-safe documents built only from provider data and non-deleted web-visible mentions. Scope before ranking and snippets. |
 | `web_sessions` | Hashed opaque session ID, Discord user ID, creation/expiry, last verified membership time. Added in Milestone 10A. |
+| `web_login_states` | Hashed one-use OAuth state, hashed browser nonce, five-minute expiry. Added in Milestone 10A. |
 
 Index channel/time/message for context, link/message for occurrences, job availability, and source filters. A transaction must keep message ingestion, occurrence reconciliation, job enqueue, and checkpoint updates coherent. Document and test FTS synchronization; rebuild both surfaces after relevant content or visibility changes.
 

@@ -1,4 +1,5 @@
 from pathlib import Path
+from shutil import copyfile
 
 import aiosqlite
 import pytest
@@ -31,7 +32,7 @@ async def test_initialize_creates_core_schema_and_enables_pragmas(tmp_path: Path
         applied = await (
             await connection.execute("SELECT count(*) FROM schema_migrations")
         ).fetchone()
-        assert applied[0] == 1
+        assert applied[0] == 2
 
 
 @pytest.mark.asyncio
@@ -75,9 +76,7 @@ async def test_external_content_fts_triggers_track_insert_update_and_delete(tmp_
             assert found[0] == 1
 
         await connection.execute("UPDATE search_documents SET title = 'fern' WHERE link_id = 1")
-        await connection.execute(
-            "UPDATE web_search_documents SET title = 'fern' WHERE link_id = 1"
-        )
+        await connection.execute("UPDATE web_search_documents SET title = 'fern' WHERE link_id = 1")
         await connection.commit()
         for fts_table in ("search_fts", "web_search_fts"):
             assert (
@@ -191,3 +190,28 @@ def test_sql_splitter_keeps_trigger_body_together() -> None:
         )
     )
     assert len(statements) == 2
+
+
+@pytest.mark.asyncio
+async def test_web_migration_preserves_existing_archive(tmp_path: Path) -> None:
+    migrations = tmp_path / "migrations"
+    migrations.mkdir()
+    source = Path(__file__).parents[1] / "migrations"
+    initial = next(source.glob("001_*.sql"))
+    copyfile(initial, migrations / initial.name)
+    database = Database(tmp_path / "upgrade.sqlite3", migrations_dir=migrations)
+    await database.initialize()
+    async with database.connection() as connection:
+        await connection.execute("INSERT INTO guilds (guild_id, name) VALUES ('1', 'preserved')")
+        await connection.commit()
+        old_ledger = await (await connection.execute("SELECT * FROM schema_migrations")).fetchall()
+    copyfile(source / "002_web_auth.sql", migrations / "002_web_auth.sql")
+    await database.initialize()
+    async with database.connection() as connection:
+        assert (await (await connection.execute("SELECT name FROM guilds")).fetchone())[0] == (
+            "preserved"
+        )
+        ledger = await (await connection.execute("SELECT * FROM schema_migrations")).fetchall()
+        assert tuple(ledger[0]) == tuple(old_ledger[0])
+        assert len(ledger) == 2
+        assert await (await connection.execute("SELECT * FROM web_sessions")).fetchall() == []

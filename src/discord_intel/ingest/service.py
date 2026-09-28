@@ -72,7 +72,6 @@ class IngestionService:
             parsed_urls.append((occurrence_index, occurrence, canonical))
 
         ingested_at = utc_timestamp()
-        jobs_enqueued = 0
         async with self.database.connection() as connection:
             async with transaction(connection):
                 await self.repository.upsert_guild(
@@ -133,10 +132,6 @@ class IngestionService:
                         occurrence.end_offset,
                         created_at=message.created_at,
                     )
-                    if await self.repository.enqueue_enrichment_job(
-                        connection, link_id, ingested_at
-                    ):
-                        jobs_enqueued += 1
                 if update_backfill_checkpoint:
                     await self.repository.upsert_channel_checkpoint(
                         connection,
@@ -150,7 +145,7 @@ class IngestionService:
             message_id=message.message_id,
             accepted=True,
             occurrence_count=len(parsed_urls),
-            enrichment_jobs_enqueued=jobs_enqueued,
+            enrichment_jobs_enqueued=0,
         )
 
     async def prepare_backfill(

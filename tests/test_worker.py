@@ -163,39 +163,27 @@ async def test_success_rolls_back_if_rebuild_enqueue_fails(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_collector_run_stops_worker_on_exit(tmp_path: Path, monkeypatch):
+async def test_collector_run_closes_without_worker(tmp_path: Path, monkeypatch):
     from discord_intel import cli
     from discord_intel.config import Settings
 
-    started = asyncio.Event()
-    stopped = asyncio.Event()
     closed = asyncio.Event()
-
-    class FakeWorker:
-        def __init__(self, *args):
-            pass
-
-        async def run(self):
-            started.set()
-            try:
-                await asyncio.Future()
-            finally:
-                stopped.set()
 
     class FakeCollector:
         def __init__(self, *args, **kwargs):
             pass
 
         async def run_bot(self):
-            await started.wait()
+            return 7
 
         async def close(self):
             closed.set()
 
-    monkeypatch.setattr(cli, "Worker", FakeWorker)
     monkeypatch.setattr(cli, "DiscordCollector", FakeCollector)
-    await cli._run_collector(Settings(_env_file=None, database_path=tmp_path / "cli.sqlite3"))
-    assert stopped.is_set() and closed.is_set()
+    result = await cli._run_collector(
+        Settings(_env_file=None, database_path=tmp_path / "cli.sqlite3")
+    )
+    assert result == 7 and closed.is_set()
 
 
 @pytest.mark.asyncio

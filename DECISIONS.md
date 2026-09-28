@@ -97,3 +97,25 @@ None recorded. Recheck the official contract at the milestone where each integra
   environment was preserved. All 107 offline tests, Ruff, and mypy passed with the local
   runtime. The launcher also passed an out-of-directory invocation with hostile PYTHONHOME
   and PYTHONPATH settings; its Python probe confirmed user-site packages are disabled.
+
+## 2026-09-27: Member website and basic search (10A)
+
+- Build one server-rendered FastAPI/Jinja website, sharing SQLite with the collector.
+  Search current scoped URLs/message text and classify on read. No JS build system,
+  extra FTS pipeline, provider calls, model, or worker service is needed for the MVP.
+- Keep a strict public-to-all-members channel model. Fetch Discord permissions before
+  each member data request; exclude any role/member read denial and uncertain parent
+  category permissions. This deliberately excludes some channels Discord could resolve
+  as visible through multiple roles; it never tries to publish private role-specific data.
+- Add migration 002 only for hashed sessions and one-use browser-bound OAuth states.
+  Keep migration 001 and all occurrence/link identities intact. Stop creating enrichment
+  jobs and starting the unused worker; preserve old queue rows and modules.
+- Official Discord OAuth examples use the versioned v10 token URL; use that endpoint
+  with form-encoded credentials. OAuth requests identify only and stores no OAuth tokens.
+  No discrepancy requiring broader API scope was found. Live permissions and tunnel
+  behavior still require the controlled-guild check documented in WEB_SETUP.md.
+- Keep deployment small: local bot and web processes, one HTTPS tunnel. A Quick Tunnel
+  can support the initial check; its temporary hostname is not a stable hosting solution.
+- Validation: 125 offline tests, Ruff, mypy, wheel build/content check, missing-config
+  launcher check, and desktop/390px sample-page inspection passed. No live Discord
+  credentials or HTTPS hostname were available; that acceptance check remains pending.

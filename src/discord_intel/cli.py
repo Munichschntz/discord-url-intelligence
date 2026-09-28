@@ -12,8 +12,6 @@ from discord_intel.config import Settings, load_settings
 from discord_intel.db import Database
 from discord_intel.discord import DiscordCollector
 from discord_intel.ingest import IngestionService
-from discord_intel.jobs import Worker
-from discord_intel.providers import Registry
 from discord_intel.topics import TopicService
 
 
@@ -36,21 +34,9 @@ async def _run_collector(settings: Settings, backfill_channel_id: str | None = N
         IngestionService(database, settings),
         backfill_channel_id=backfill_channel_id,
     )
-    if backfill_channel_id is not None:
-        return await collector.run_bot()
-    worker_task = asyncio.create_task(Worker(database, Registry()).run())
-    collector_task = asyncio.create_task(collector.run_bot())
     try:
-        done, _ = await asyncio.wait(
-            (worker_task, collector_task), return_when=asyncio.FIRST_COMPLETED
-        )
-        for task in done:
-            task.result()
-        return None
+        return await collector.run_bot()
     finally:
-        worker_task.cancel()
-        collector_task.cancel()
-        await asyncio.gather(worker_task, collector_task, return_exceptions=True)
         await collector.close()
 
 
@@ -68,7 +54,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Database file path (defaults to DATABASE_PATH)",
     )
-    commands.add_parser("run", help="Start the allowlisted Discord collector and job worker")
+    commands.add_parser("run", help="Start the allowlisted Discord collector")
+    commands.add_parser("web", help="Start the member website on loopback")
     backfill_parser = commands.add_parser("backfill", help="Backfill one allowlisted channel")
     backfill_parser.add_argument("--channel-id", required=True)
     topics_parser = commands.add_parser(
@@ -90,6 +77,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.print_help()
         return 0
     parsed = parser.parse_args(arguments)
+    if parsed.command == "web":
+        import uvicorn
+
+        from discord_intel.web.app import create_app
+
+        settings = load_settings()
+        try:
+            app = create_app(settings)
+        except ValueError as error:
+            parser.error(str(error))
+        uvicorn.run(
+            app,
+            host=settings.web_host,
+            port=settings.web_port,
+            proxy_headers=True,
+            forwarded_allow_ips="127.0.0.1,::1",
+            access_log=False,
+        )
+        return 0
     if parsed.command == "topics":
         try:
             result = asyncio.run(
