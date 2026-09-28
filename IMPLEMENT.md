@@ -1,5 +1,14 @@
 # Implementation Notes
 
+## Current direction
+
+The active MVP path is Discord collector -> SQLite -> keyword topic rules -> member web
+page. Build the website next, with a search box and topic filters using the existing scoped
+data service. No separate search platform, model, provider integration, or worker is needed
+for that flow. Earlier milestone notes below describe what exists; they are not a list of
+features still required. Remove the idle worker from normal launch as part of wiring up
+the website; preserve existing database rows and immutable migrations.
+
 ## Scaffold decisions (Milestone 1)
 
 The scaffold uses a `src/` layout, Python 3.12+, `uv`, Pydantic Settings, and a standard-library `argparse` CLI. Settings are environment-backed and can load a local `.env`; secrets use `SecretStr`. Discord IDs remain decimal strings. The model rejects web-visible channels outside the ingestion allowlist, non-HTTPS/non-exact OAuth callback URLs, and non-loopback web/MCP bind addresses.

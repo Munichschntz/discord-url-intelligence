@@ -1,39 +1,47 @@
-# Milestone Plan
+# MVP Plan
 
-Status is tracked here; detailed deliverables and acceptance criteria are in `discord-intel-implementation-plan.md`.
+## Product
 
-| Milestone | Scope | Status | Main dependency additions |
-|---|---|---|---|
-| 0 | Discord accounts and permissions | Complete | None |
-| 1 | Scaffold and freeze specification | Complete | `pydantic-settings`, `python-dotenv`; dev: `ruff`, `mypy`, `pytest` |
-| 2 | SQLite and append-only migrations | Complete | `aiosqlite`; dev: `pytest-asyncio` |
-| 3 | URL extraction and canonicalization | Complete | `linkify-it-py`, `url-normalize` |
-| 4 | Live Discord ingestion | Complete | `discord.py` |
-| 5 | Backfill, edits, and deletions | Complete | Reuse `discord.py` |
-| 6 | Durable enrichment worker | Complete | None |
-| 6A | Configurable cross-channel topic categories | Complete | None |
-| 6B | Project-local Python and virtual environment | Complete | None |
-| 9 | FTS5 keyword/topic search and bounded context | Next | SQLite FTS5 |
-| 10A | Member web app and first useful release | Not started | FastAPI, Jinja2 |
-| 7 | GitHub metadata | Deferred beyond MVP | `httpx` |
-| 8A | Hugging Face models | Deferred beyond MVP | `huggingface_hub` |
-| 8B | Hacker News | Deferred beyond MVP | Reuse `httpx` |
-| 8C | Generic pages and SSRF protection | Deferred beyond MVP | `httpx`, `trafilatura` |
-| 10B | Optional Markdown overview | Not started | None planned |
-| 11 | Optional owner-only MCP | Not started | Official MCP Python SDK v2 |
-| 12 | Optional LM Studio summaries | Not started | `openai` |
-| 13 | Optional embeddings and hybrid retrieval | Not started | `numpy` |
-| 14 | Manual project lifecycle | Not started | None planned |
-| 15 | Refresh policy | Not started | None planned |
-| 16 | Operations and recovery | Not started | None planned |
+Collect URLs from approved Discord channels, classify them into topics, and let server
+friends browse and search them on one small website. No AI models or training are needed.
 
-Keep each milestone focused. Run the offline gates after each one, update this status and user documentation, and stop at the milestone boundary. Live integration checks stay explicitly marked and excluded from the default test suite.
+## Work remaining
 
-## MVP scope revision (2026-09-27)
+| Milestone | Scope | Status |
+|---|---|---|
+| Collection | Bot, URL extraction, deduplication, backfill, edits/deletes, SQLite | Complete |
+| Classification | Configurable keyword/URL rules, overlapping topics, Uncategorized | Complete |
+| Local runtime | Private Python and isolated venv | Complete |
+| Member web app (10A, including basic search) | Discord sign-in, topic filters, keyword search, recent links, original-message links, HTTPS setup | Next |
 
-The next steps are topic categories, search over stored URLs and Discord text, then the
-member website. Categories span channels and can overlap. Milestone 6A adds editable
-keyword rules, Uncategorized fallback, a local preview command, and separate owner/member
-category queries with offline privacy and message-lifecycle tests. It does not add the
-website or search engine. Provider enrichment and milestones 10B-16 are outside this MVP.
-No GitHub runners, agents, AI service, or additional infrastructure is required.
+Implement only the first incomplete milestone and stop at its boundary. There is no
+separate search-platform milestone before the website. Start with the existing scoped
+category service and simple text matching against URLs and current message text. Add an
+index only if measured archive size makes it necessary.
+
+## Website acceptance
+
+- A friend signs in with Discord and can browse all approved shared links in one place.
+- Topic filters combine with a search box; unmatched links remain under Uncategorized.
+- Results show the URL, topics, source channel, short message excerpt, and original-message link.
+- Results have bounded pagination (20 by default, at most 50) and work on phones.
+- Only current guild members can access data. Private-channel mentions never affect results,
+  categories, counts, excerpts, or ordering. Preserve SPEC.md's session and visibility rules.
+- No website scraping, provider API enrichment, model service, or job worker is required for
+  the page to work. Remove the idle enrichment worker from the normal launch path when
+  wiring up the MVP; preserve existing data and immutable migrations.
+- Document running the bot and website with the project-local Python, and publishing only
+  the website through HTTPS. Verify the core flow with a controlled Discord guild.
+- Run Ruff, mypy, and offline tests; keep live integration checks outside the default suite.
+
+## Out of scope
+
+AI summaries, embeddings, model classifiers, MCP, provider-specific metadata integrations,
+project lifecycle tracking, refresh scheduling, Markdown reports, GitHub runners/agents,
+and extra queue or search services are not planned features. Reconsider only if a real
+need appears after friends use the website.
+
+The original numbered implementation plan is historical background. This file and the
+current scope in SPEC.md take precedence over its superseded feature briefs. Existing
+unused schema/code can remain until a small removal is needed; do not rewrite the working
+collector or migrate data just to make the repository look smaller.

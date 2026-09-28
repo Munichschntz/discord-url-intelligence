@@ -1,5 +1,20 @@
 # Architecture Decisions
 
+## 2026-09-27: Reduce the product to collection, classification, and a website
+
+- The user reaffirmed that the app should only extract Discord URLs, categorize them, and
+  display them to server friends. The existing keyword classifier is sufficient; no AI
+  model, training, or additional classification service is needed.
+- Replace the broad active roadmap with one remaining member-web milestone. Basic text
+  search and topic filters ship with the page; an FTS indexing milestone is not a gate.
+- Remove optional provider, AI, MCP, lifecycle, and refresh features from planned scope
+  rather than describing them as inevitable later work. The old handoff is historical.
+- Preserve working collection, the private runtime/venv, and existing data. Remove the idle
+  enrichment worker from normal launch when implementing the website; avoid a schema
+  teardown or rewrite solely to reduce code count.
+- This change updates scope documentation only. Application behavior is unchanged; no
+  tests were added or rerun for this documentation-only revision.
+
 ## 2026-09-27: Scaffold boundaries
 
 - Use Python 3.12+ and `uv`; the current development container has Python 3.14, which is within that range.

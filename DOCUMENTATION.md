@@ -2,7 +2,7 @@
 
 ## Current state
 
-The repository supports Discord collection/backfill, message edits and deletions, durable jobs, and local previews of topic categories across channels. `discord-intel run` collects live messages. The application does not run a web server yet. Keyword/topic search and the member website are next; provider enrichment and AI features are deferred beyond the MVP.
+The repository collects Discord URLs and categorizes them using configurable keyword rules, with support for history imports, edits, and deletions. No AI models are used. The remaining MVP work is a small website where server friends can sign in, browse topics, and search links. The website is not implemented yet. Provider enrichment, MCP, AI features, and project tracking are outside scope.
 
 ## Prerequisites
 

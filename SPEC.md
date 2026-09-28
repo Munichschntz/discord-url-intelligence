@@ -2,7 +2,13 @@
 
 ## Purpose and scope
 
-Discord Intel archives messages from one configured Discord guild and explicitly allowlisted channels, extracts shared HTTP(S) URLs, and categorizes them into topics across channels. The MVP is a searchable member website at Milestone 10A, using stored URLs and Discord text. Provider enrichment and owner/AI features are deferred. Collection and search must not depend on LM Studio. Discord ingestion and local topic previews are implemented; the website is not yet implemented.
+Discord Intel extracts URLs from approved channels in one Discord server, classifies them with simple topic rules, and makes them browsable/searchable on a small website for server friends. Collection and classification already work; the member website is the remaining MVP milestone. No AI models, training, provider enrichment, MCP, or project tracking are planned.
+
+The current PLAN.md supersedes the original broad roadmap. Start with simple text matching
+and the existing scoped category service for website search; a separate FTS implementation
+is not a prerequisite. The schema below records existing storage plus historical future
+designs; it does not authorize implementing those future features. Preserve applied
+migrations and existing data while simplifying the normal application path.
 
 ## Invariants
 
@@ -75,12 +81,12 @@ service after changing its rule file). Member categories use only live occurrenc
 configured guild and channels present in both allowlists and marked web-visible in the
 database. Private messages must not affect member categories, counts, or ordering.
 
-Detailed provider enrichment and optional owner/AI features are deferred until after the
-searchable member website. Search must initially work from stored URLs and Discord text.
+Provider enrichment and owner/AI features are outside the product scope. Search uses stored
+URLs and Discord text. Categories use literal rules; there is no trained classifier.
 
 Status values are `NEW`, `TRY`, `WATCH`, `TESTING`, `DONE`, `BLOCKED`, and `ARCHIVED`; new links default to `NEW`. Validate every change. Manual tags and notes survive provider refresh and summary regeneration.
 
-MVP search supports keywords and topic categories, including Uncategorized; matching a topic never depends on a provider service. Channel, author, domain, resource type, tag, status, and date filters remain future enhancements. Default result limit is 20, hard maximum 50. Convert user text to safe FTS terms. Discussion context contains at most three prior and three following live messages in the same channel. Member-facing documents and result fields must be derived only from visible occurrences.
+MVP search supports keywords and topic categories, including Uncategorized; matching a topic never depends on a provider service. Advanced filters and lifecycle status are outside scope. Default result limit is 20, hard maximum 50. Treat search input as literal text; if FTS is later justified, convert text to safe FTS terms. Result excerpts come from the current sharing message; expanded discussion context is optional and limited to three prior/following live messages in the same channel. Member-facing fields must be derived only from visible occurrences.
 
 ## Acceptance criteria
 

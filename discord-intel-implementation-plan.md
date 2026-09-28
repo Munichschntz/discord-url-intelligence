@@ -1,5 +1,11 @@
 # Discord Intel — Implementation Plan and LLM Handoff
 
+> **Historical roadmap, superseded by PLAN.md:** The current product is Discord URL
+> collection, rule-based topic classification, and a small member website with basic
+> search. The website is next. AI, provider enrichment, MCP, lifecycle tracking, and a
+> separate search-platform milestone are not required or planned. Do not implement the
+> old optional briefs below unless the user explicitly requests them.
+
 **Document date:** 2026-09-27  
 **Target environment:** Windows 11, Python, `uv`, SQLite, a Discord bot, a small web app, and optional local LM Studio  
 **Project name used below:** `discord-intel`
