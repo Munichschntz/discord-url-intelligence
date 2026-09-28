@@ -1,5 +1,12 @@
 # Discord Intel
 
+> [!WARNING]
+> **Work in progress — not ready for use.** This is an unfinished, experimental project
+> published for development. It is very unlikely to work as expected and may not work at
+> all. Features, setup instructions, and configuration may be incomplete or change without
+> notice. Passing offline tests does not mean the full Discord-to-website flow works;
+> live end-to-end verification is still pending. Do not rely on it for production use.
+
 Discord Intel collects URLs from selected channels in one Discord server and gives friends a searchable website with topic filters. Categories use simple keyword rules. No AI models or background enrichment services are required.
 
 The website is implemented and tested offline. Follow the [website launch guide](docs/WEB_SETUP.md) to connect Discord sign-in and HTTPS; the first live server check is still pending.
