@@ -16,6 +16,24 @@ This scaffold contains no external API integration. These official references ar
 | LM Studio local endpoints | [OpenAI-compatible API](https://lmstudio.ai/docs/developer/openai-compat), [structured output](https://lmstudio.ai/docs/developer/openai-compat/structured-output), [embeddings](https://lmstudio.ai/docs/developer/openai-compat/embeddings) | Verify for Milestones 12 and 13 |
 | MCP Python SDK v2 | [Official SDK docs](https://py.sdk.modelcontextprotocol.io/), [SDK repository](https://github.com/modelcontextprotocol/python-sdk), [run/deployment](https://py.sdk.modelcontextprotocol.io/run/) | Verify v2 API and transport for Milestone 11 |
 
+## Milestone 6B runtime contract (checked 2026-09-27)
+
+- Verified with uv 0.12.7 and its official [Python installation guide](https://docs.astral.sh/uv/concepts/python-versions/)
+  and [environment reference](https://docs.astral.sh/uv/reference/environment/).
+  `UV_PYTHON_INSTALL_DIR` selects project-local interpreter storage. `uv python install`
+  accepts `--no-bin` and `--no-registry`, preventing global command/registry registration.
+  `UV_PYTHON_NO_REGISTRY=1` also disables registry discovery/registration.
+- With `UV_PYTHON_PREFERENCE=only-managed`, `uv python find --system --no-project --no-python-downloads VERSION` resolves the
+  downloaded interpreter. `uv venv --python PATH .venv` creates the isolated environment;
+  `UV_PROJECT_ENVIRONMENT` fixes its destination. `uv sync --locked --group dev` installs
+  locked dependencies there. No `pip --system`, PATH edits, or machine settings are used.
+  The find-only `--system` skips virtual environments; `only-managed` still excludes
+  unmanaged interpreters. This matters on repeat setup when `.venv` already exists.
+- CPython's [embeddable ZIP documentation](https://docs.python.org/3/using/windows.html#the-embeddable-package)
+  says normal pip dependency management is unsupported. Use uv's standalone CPython build
+  for the requested private runtime plus venv. Python `-I` ignores Python environment
+  variables and user-site packages at launch; the application remains installed in `.venv`.
+
 ## Milestone 5 contract
 
 - `discord.py` 2.7.1 `Messageable.history(limit=None, after=..., oldest_first=True)` returns an async iterator and requires `READ_MESSAGE_HISTORY`. `after` resumes strictly after the given message; the collector checkpoints every successfully processed message in the same transaction as ingestion.

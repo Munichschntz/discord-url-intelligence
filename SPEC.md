@@ -6,6 +6,11 @@ Discord Intel archives messages from one configured Discord guild and explicitly
 
 ## Invariants
 
+Runtime isolation: Windows setup uses the version pinned in `.python-version`, with a
+private standalone interpreter in `.python` and packages in `.venv`. System-site packages
+are disabled. The launcher must use this exact venv without a system-Python fallback.
+Setup must not register Python globally or modify persistent PATH/system Python packages.
+
 1. Use an authorized Discord bot, never a user token or self-bot. Ingest only configured guild and channel IDs.
 2. Save every message in allowed channels, including messages without URLs. Keep the web-visible channel allowlist separate and empty by default.
 3. A canonical URL has one global link row; every appearance is a separate occurrence, including repeated URLs in one message.

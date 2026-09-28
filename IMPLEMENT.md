@@ -85,3 +85,18 @@ derived classifications; revisit indexing if actual archive size makes this slow
 
 The next milestone builds keyword/topic search from URLs and Discord text, followed by
 the member website. Full provider metadata is no longer a prerequisite for the MVP.
+
+## Private runtime (Milestone 6B)
+
+The Windows setup script uses a uv-managed standalone CPython runtime in `.python` and a
+real `.venv`. Version selection is pinned in `.python-version`; dependency resolution is
+locked by `uv.lock`. The script confines install/cache/environment paths to this checkout,
+disables Python command/registry registration, and restores caller environment variables
+and working directory on success or failure. An existing externally based environment is
+moved to an ignored backup before replacement. Repeat setup compares the underlying home
+directories because uv can use a stable minor-version junction for its runtime.
+
+`run.ps1` requires a venv whose configured home is under this project's `.python`, rejects
+system-site-package inclusion, and invokes its exact Python executable with `-I -m
+discord_intel`. It never downloads dependencies or chooses a system interpreter. App command
+arguments and exit codes are preserved; relative config/database paths use the project root.

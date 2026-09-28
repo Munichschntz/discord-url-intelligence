@@ -6,8 +6,8 @@ The repository supports Discord collection/backfill, message edits and deletions
 
 ## Prerequisites
 
-- Python 3.12 or newer.
-- `uv` installed and available on `PATH`.
+- Windows PowerShell and `uv` 0.12.7 or newer on `PATH`.
+- No system Python installation is required. Setup installs the pinned standalone runtime locally.
 - For eventual collection: a Discord application/bot installed only in the intended guild, Message Content Intent enabled, and explicit source channel IDs.
 - For eventual member web access: an HTTPS hostname/tunnel, a registered exact OAuth callback URI, and a separately designated web-visible channel list.
 
@@ -26,13 +26,42 @@ Important settings include the bot token, guild ID, source and web-visible chann
 
 ## Install and commands
 
-```sh
-uv sync --group dev
-uv run discord-intel --help
-uv run discord-intel db init
-uv run discord-intel run
-uv run discord-intel backfill --channel-id 123456789012345678
+```powershell
+.\setup.ps1
+.\run.ps1 --help
+.\run.ps1 db init
+.\run.ps1 run
+.\run.ps1 backfill --channel-id 123456789012345678
 ```
+
+`setup.ps1` downloads the standalone CPython version in `.python-version` to `.python`,
+creates `.venv` with system packages excluded, and installs the locked application and
+development dependencies there. The local download cache is `.uv-cache`. These folders are
+ignored by Git. No system Python packages, global Python commands, registry registrations,
+or persistent PATH settings are changed. Install uv using its standalone installer or
+executable; it does not need to be installed with system pip.
+
+`run.ps1` starts `.venv\Scripts\python.exe` in isolated mode and passes its arguments to
+the application. It works when invoked by absolute path from another directory; configuration
+and data paths still resolve relative to the project folder. No venv activation is needed.
+Missing or externally based venvs produce a setup instruction rather than a system-Python
+fallback. `uv run` remains usable for development checks after setup.
+
+First setup needs internet access. Repeating setup reuses the runtime and venv; updates
+install only the locked dependencies. If an existing venv uses another runtime, setup
+preserves it as `.venv.previous-<unique-id>` before creating the local one. Close running
+collectors before replacing their environment. A failed install can be retried with the
+same command. After moving the project folder to a different location, rerun setup; venvs
+are not portable. Keep the source and private `data`/`.env` files separate from disposable
+runtime folders when backing up.
+
+Python's minimal embeddable ZIP is intended for vendored application distributions and
+does not support normal pip dependency management. This project uses a standalone Python
+build plus a real venv to satisfy local isolation while retaining standard dependency tools.
+
+If script execution is blocked, use a process-only invocation such as
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1` or
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\run.ps1 run`.
 
 `discord-intel db init` creates the configured database parent directory, enables SQLite WAL/foreign-key settings, and applies pending append-only migrations. Override the configured database path with `--database PATH`. Repeating the command is safe; applied migration checksums are verified and modified/deleted migration files are rejected. Local database files are ignored by Git.
 
@@ -60,10 +89,10 @@ messages; tune the rules against your actual archive.
 Preview your locally collected links:
 
 ```sh
-uv run discord-intel topics
-uv run discord-intel topics --category "Coding"
-uv run discord-intel topics --category "Uncategorized" --limit 20 --offset 0
-uv run discord-intel topics --member-view
+.\run.ps1 topics
+.\run.ps1 topics --category "Coding"
+.\run.ps1 topics --category "Uncategorized" --limit 20 --offset 0
+.\run.ps1 topics --member-view
 ```
 
 The command prints JSON with unique-link counts for every topic and a page of matching

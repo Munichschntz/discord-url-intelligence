@@ -14,6 +14,7 @@
 - [x] Milestone 5 — backfill, edits, and deletions complete.
 - [x] Milestone 6 — durable enrichment worker complete.
 - [x] Milestone 6A — configurable cross-channel topic categories complete.
+- [x] Milestone 6B — private project Python runtime and venv complete.
 - [ ] Milestone 9 — next: keyword/topic search over stored URLs and Discord text.
 
 > **MVP scope revision (2026-09-27):** The user prioritizes one searchable library for
@@ -208,6 +209,14 @@ Provide an owner-local category preview and an independently scoped member query
 **Acceptance:** Offline tests cover overlapping topics, word boundaries, custom rules,
 repeated occurrences, cross-channel evidence, edits/deletes, visibility revocation,
 private/public overlap, bounded results, and the local command.
+
+### Milestone 6B — Project-local Python and venv (complete)
+
+Milestone 6B was added at the user's request before search: `setup.ps1` installs private
+standalone Python under `.python` and locked packages under `.venv`; `run.ps1` always uses
+that environment. Setup and launch do not modify system Python, register Python globally,
+or alter persistent PATH. Existing externally based venvs are backed up. See DOCUMENTATION.md
+for commands and recovery notes. Offline runtime tests join the normal validation suite.
 
 ### Milestone 7 — GitHub metadata (deferred beyond MVP)
 

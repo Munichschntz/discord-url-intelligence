@@ -4,8 +4,8 @@ Discord Intel archives messages and links from selected channels in one Discord 
 
 ## Requirements
 
-- Python 3.12 or newer
-- [`uv`](https://docs.astral.sh/uv/)
+- Windows PowerShell and [`uv` 0.12.7 or newer](https://docs.astral.sh/uv/getting-started/installation/)
+- No system Python installation is needed; setup downloads a private runtime into this folder
 - A Discord application with a bot installed in the target server
 - `View Channel` and `Read Message History` permissions for the selected channels
 - **Message Content Intent** enabled in the Discord Developer Portal
@@ -26,12 +26,22 @@ Get the guild and channel IDs using Discord Developer Mode. The source-channel l
 
 ## Install and Run
 
-```sh
-uv sync --group dev
-uv run discord-intel --help
-uv run discord-intel db init
-uv run discord-intel run
+```powershell
+.\setup.ps1
+.\run.ps1 --help
+.\run.ps1 db init
+.\run.ps1 run
 ```
+
+Setup pins Python via `.python-version`, stores its standalone runtime in `.python`, and
+installs locked dependencies in `.venv`. It does not install packages into system Python,
+register Python globally, or change PATH. Both folders and the download cache are ignored
+by Git. `run.ps1` always uses this venv and needs no activation or network to launch.
+
+If PowerShell blocks scripts, invoke just these scripts with a process-only policy:
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1`, then
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\run.ps1 --help`.
+No permanent execution-policy change is needed. First setup requires internet access.
 
 `db init` applies local SQLite migrations. The default database path is `data/discord-intel.sqlite3`; override it with `DATABASE_PATH` in `.env` or `--database PATH` for `db init`.
 
@@ -41,8 +51,8 @@ uv run discord-intel run
 
 Backfill one configured channel with:
 
-```sh
-uv run discord-intel backfill --channel-id 234567890123456789
+```powershell
+.\run.ps1 backfill --channel-id 234567890123456789
 ```
 
 History is imported oldest-first. Each message and its channel checkpoint commit together, so rerunning the command resumes after the last committed message. The bot needs `Read Message History` for that channel.

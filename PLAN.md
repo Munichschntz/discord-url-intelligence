@@ -12,6 +12,7 @@ Status is tracked here; detailed deliverables and acceptance criteria are in `di
 | 5 | Backfill, edits, and deletions | Complete | Reuse `discord.py` |
 | 6 | Durable enrichment worker | Complete | None |
 | 6A | Configurable cross-channel topic categories | Complete | None |
+| 6B | Project-local Python and virtual environment | Complete | None |
 | 9 | FTS5 keyword/topic search and bounded context | Next | SQLite FTS5 |
 | 10A | Member web app and first useful release | Not started | FastAPI, Jinja2 |
 | 7 | GitHub metadata | Deferred beyond MVP | `httpx` |

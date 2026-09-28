@@ -64,3 +64,21 @@ None recorded. Recheck the official contract at the milestone where each integra
   required in Milestone 10A; a local member preview does not replace it.
 - No external API integration or schema change was introduced. Existing migrations remain
   unchanged. Validation: Ruff and mypy passed; all 103 offline tests passed.
+
+## 2026-09-27: Private Python and venv
+
+- The user requested an embedded/private runtime and a venv to keep system Python clean.
+  Add setup-only Milestone 6B before search, without changing application behavior.
+- Use uv's standalone CPython 3.13.13 in `.python`, and locked dependencies in `.venv`.
+  The official Windows embeddable ZIP does not support ordinary pip dependency management;
+  a standalone runtime supplies the requested isolation with standard venv support.
+- Setup disables global executable and registry registration. Launch uses the exact local
+  venv in isolated mode. No system Python install, machine configuration, new service, or
+  new application dependency is required. Existing externally based venvs are preserved.
+- Verified the uv CLI contract locally against 0.12.7. `python find --no-project` alone still
+  discovers `.venv`; adding the find-only `--system` with `only-managed` selects the local
+  base runtime. Do not combine `--managed-python` with `UV_PYTHON_PREFERENCE`, which uv rejects.
+- Validation: initial local installation and an offline repeat setup succeeded; the old
+  environment was preserved. All 107 offline tests, Ruff, and mypy passed with the local
+  runtime. The launcher also passed an out-of-directory invocation with hostile PYTHONHOME
+  and PYTHONPATH settings; its Python probe confirmed user-site packages are disabled.
